@@ -1,1 +1,1297 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SchnittGrip - Statik-Tool für Einfeldträger</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        canvas { 
+            border: 1px solid #e2e8f0; 
+            background: #ffffff; 
+            width: 100%; 
+            height: auto; 
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        input[type="number"], select, input[type="range"] {
+            transition: all 0.2s ease-in-out;
+        }
+        input[type="number"]:focus, select:focus {
+            outline: none;
+            border-color: #0d9488;
+            box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15);
+        }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen p-4 md:p-6 font-sans text-slate-800">
+    <div class="max-w-7xl mx-auto bg-white p-6 rounded-2xl shadow-xl border border-slate-100">
+        
+        <!-- Header inkl. Navigation -->
+        <header class="mb-6 border-b pb-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+                <div class="flex items-center gap-3 mb-1">
+                    <a href="index.html" class="text-teal-600 hover:text-teal-800 font-semibold text-sm flex items-center gap-1 bg-teal-50 px-2 py-1 rounded">
+                        <span>&larr;</span> Zurück zum Menü
+                    </a>
+                    <span class="text-xs font-bold bg-teal-100 text-teal-700 px-2 py-0.5 rounded uppercase tracking-wide">Modul 3</span>
+                </div>
+                <h1 class="text-3xl font-extrabold text-slate-800">SchnittGrip Pro</h1>
+                <p class="text-sm text-slate-500 mt-1">Interaktive Baustatik: Verschiebe Lasten per Drag & Drop oder passe sie über das Panel an.</p>
+            </div>
+            <div class="flex items-center gap-3">
+                <button id="btnExport" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2.5 rounded-lg shadow transition-colors text-sm flex items-center gap-2">
+                    📥 Grafik-Export (PNG)
+                </button>
+                <div class="bg-teal-50 px-4 py-2.5 rounded-lg border border-teal-100 text-teal-800 text-sm font-semibold shadow-sm">
+                    Live-Berechnung & Toggles
+                </div>
+            </div>
+        </header>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            <!-- Steuerungspanel links (4 Spalten) -->
+            <div class="lg:col-span-4 space-y-6 max-h-[calc(100vh-140px)] overflow-y-auto pr-2">
+                <!-- Muster-Szenarien / Presets -->
+                <div class="p-4 bg-gradient-to-r from-teal-50 to-indigo-50 rounded-xl border border-slate-200 shadow-sm">
+                    <h2 class="text-sm font-bold text-slate-700 mb-2 uppercase tracking-wider flex items-center gap-2">
+                        ⭐ Muster-Szenarien (Presets)
+                    </h2>
+                    <select id="presetSelect" class="w-full border border-slate-300 rounded-lg p-2.5 font-semibold text-slate-700 bg-white shadow-sm focus:ring-2 focus:ring-teal-500">
+                        <option value="custom" selected>-- Eigenes System erstellen --</option>
+                        <option value="einfeld">1. Reiner Einfeldträger mit Einzellast</option>
+                        <option value="gleichlast">2. Gleichlast-Klassiker (vollflächig)</option>
+                        <option value="doppelkragarm">3. Doppel-Kragarm mit Stützmomenten</option>
+                        <option value="pruefung">4. Komplexe Prüfungsmischlast</option>
+                    </select>
+                </div>
 
+                <!-- System -->
+                <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                    <h2 class="text-lg font-bold text-slate-700 flex items-center gap-2">
+                        <span class="w-2 h-5 bg-teal-600 rounded-full"></span>
+                        Systemparameter
+                    </h2>
+                    
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wider">Länge Hauptfeld L [m]</label>
+                        <input type="number" id="length" value="10" min="1" max="30" step="0.5" class="w-full border border-slate-300 rounded-lg p-2 font-semibold text-slate-700">
+                    </div>
+
+                    <!-- Kragarm links -->
+                    <div class="border-t border-slate-200 pt-3">
+                        <div class="flex items-center justify-between mb-2">
+                            <label for="enable_kl" class="text-sm font-bold text-slate-700">Kragarm links</label>
+                            <input type="checkbox" id="enable_kl" class="w-4 h-4 text-teal-600 border-slate-300 rounded focus:ring-teal-500">
+                        </div>
+                        <div id="kl_container" class="hidden">
+                            <label class="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wider">Länge Kragarm links [m]</label>
+                            <input type="number" id="length_kl" value="2" min="0.1" max="10" step="0.1" class="w-full border border-slate-300 rounded-lg p-2 text-sm">
+                        </div>
+                    </div>
+
+                    <!-- Kragarm rechts -->
+                    <div class="border-t border-slate-200 pt-3">
+                        <div class="flex items-center justify-between mb-2">
+                            <label for="enable_kr" class="text-sm font-bold text-slate-700">Kragarm rechts</label>
+                            <input type="checkbox" id="enable_kr" class="w-4 h-4 text-teal-600 border-slate-300 rounded focus:ring-teal-500">
+                        </div>
+                        <div id="kr_container" class="hidden">
+                            <label class="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wider">Länge Kragarm rechts [m]</label>
+                            <input type="number" id="length_kr" value="2" min="0.1" max="10" step="0.1" class="w-full border border-slate-300 rounded-lg p-2 text-sm">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Streckenlasten -->
+                <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                    <h3 class="text-lg font-bold text-slate-700 flex items-center gap-2">
+                        <span class="w-2 h-5 bg-teal-600 rounded-full"></span>
+                        Streckenlasten
+                    </h3>
+                    
+                    <!-- q1 -->
+                    <div class="p-3 bg-white rounded-lg border border-slate-200">
+                        <div class="flex justify-between items-center mb-2 pb-2 border-b border-slate-100">
+                            <div class="flex items-center gap-2">
+                                <input type="checkbox" id="enable_q1" checked class="w-4 h-4 text-teal-600 border-slate-300 rounded focus:ring-teal-500">
+                                <span class="font-bold text-sm text-slate-700">Streckenlast q1</span>
+                            </div>
+                            <select id="colorQ1" class="border border-slate-300 rounded p-1 text-xs bg-slate-50 font-medium">
+                                <option value="#0d9488" selected>Teal</option>
+                                <option value="#6366f1">Indigo</option>
+                                <option value="#10b981">Smaragd</option>
+                                <option value="#f43f5e">Rose</option>
+                                <option value="#f59e0b">Bernstein</option>
+                            </select>
+                        </div>
+                        <div id="q1_inputs_container" class="grid grid-cols-3 gap-2">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-400 uppercase">Wert [kN/m]</label>
+                                <input type="number" id="q1" value="5" step="0.5" class="w-full border rounded p-1.5 text-sm font-semibold">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-400 uppercase">Start x [m]</label>
+                                <input type="number" id="q1_start" value="0" step="0.1" class="w-full border rounded p-1.5 text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-400 uppercase">Ende x [m]</label>
+                                <input type="number" id="q1_end" value="5" step="0.1" class="w-full border rounded p-1.5 text-sm">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- q2 -->
+                    <div class="p-3 bg-white rounded-lg border border-slate-200">
+                        <div class="flex justify-between items-center mb-2 pb-2 border-b border-slate-100">
+                            <div class="flex items-center gap-2">
+                                <input type="checkbox" id="enable_q2" checked class="w-4 h-4 text-teal-600 border-slate-300 rounded focus:ring-teal-500">
+                                <span class="font-bold text-sm text-slate-700">Streckenlast q2</span>
+                            </div>
+                            <select id="colorQ2" class="border border-slate-300 rounded p-1 text-xs bg-slate-50 font-medium">
+                                <option value="#0d9488">Teal</option>
+                                <option value="#6366f1" selected>Indigo</option>
+                                <option value="#10b981">Smaragd</option>
+                                <option value="#f43f5e">Rose</option>
+                                <option value="#f59e0b">Bernstein</option>
+                            </select>
+                        </div>
+                        <div id="q2_inputs_container" class="grid grid-cols-3 gap-2">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-400 uppercase">Wert [kN/m]</label>
+                                <input type="number" id="q2" value="3" step="0.5" class="w-full border rounded p-1.5 text-sm font-semibold">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-400 uppercase">Start x [m]</label>
+                                <input type="number" id="q2_start" value="5" step="0.1" class="w-full border rounded p-1.5 text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-400 uppercase">Ende x [m]</label>
+                                <input type="number" id="q2_end" value="10" step="0.1" class="w-full border rounded p-1.5 text-sm">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Einzellasten -->
+                <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                    <h3 class="text-lg font-bold text-slate-700 flex items-center gap-2">
+                        <span class="w-2 h-5 bg-teal-600 rounded-full"></span>
+                        Einzellasten
+                    </h3>
+                    
+                    <!-- F1 -->
+                    <div class="p-3 bg-white rounded-lg border border-slate-200">
+                        <div class="flex justify-between items-center mb-2 pb-2 border-b border-slate-100">
+                            <div class="flex items-center gap-2">
+                                <input type="checkbox" id="enable_f1" checked class="w-4 h-4 text-teal-600 border-slate-300 rounded focus:ring-teal-500">
+                                <span class="font-bold text-sm text-slate-700">Einzellast F1</span>
+                            </div>
+                            <select id="colorF1" class="border border-slate-300 rounded p-1 text-xs bg-slate-50 font-medium">
+                                <option value="#0d9488">Teal</option>
+                                <option value="#6366f1">Indigo</option>
+                                <option value="#10b981">Smaragd</option>
+                                <option value="#f43f5e" selected>Rose</option>
+                                <option value="#f59e0b">Bernstein</option>
+                            </select>
+                        </div>
+                        <div id="f1_inputs_container" class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-400 uppercase">Kraft [kN]</label>
+                                <input type="number" id="f1" value="15" step="1" class="w-full border rounded p-1.5 text-sm font-semibold">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-400 uppercase">Position x [m]</label>
+                                <input type="number" id="x1" value="2" step="0.1" class="w-full border rounded p-1.5 text-sm">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- F2 -->
+                    <div class="p-3 bg-white rounded-lg border border-slate-200">
+                        <div class="flex justify-between items-center mb-2 pb-2 border-b border-slate-100">
+                            <div class="flex items-center gap-2">
+                                <input type="checkbox" id="enable_f2" checked class="w-4 h-4 text-teal-600 border-slate-300 rounded focus:ring-teal-500">
+                                <span class="font-bold text-sm text-slate-700">Einzellast F2</span>
+                            </div>
+                            <select id="colorF2" class="border border-slate-300 rounded p-1 text-xs bg-slate-50 font-medium">
+                                <option value="#0d9488">Teal</option>
+                                <option value="#6366f1">Indigo</option>
+                                <option value="#10b981">Smaragd</option>
+                                <option value="#f43f5e">Rose</option>
+                                <option value="#f59e0b" selected>Bernstein</option>
+                            </select>
+                        </div>
+                        <div id="f2_inputs_container" class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-400 uppercase">Kraft [kN]</label>
+                                <input type="number" id="f2" value="10" step="1" class="w-full border rounded p-1.5 text-sm font-semibold">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-400 uppercase">Position x [m]</label>
+                                <input type="number" id="x2" value="7" step="0.1" class="w-full border rounded p-1.5 text-sm">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Skalierung & Darstellungsoptionen -->
+                <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                    <h3 class="text-sm font-bold text-slate-700">Darstellungsoptionen</h3>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 mb-1 uppercase tracking-wider">Maßstab der Kurvenhöhe</label>
+                        <input type="range" id="diagramScale" min="0.2" max="2.5" step="0.05" value="1" class="w-full accent-teal-600">
+                    </div>
+                    <div class="flex items-center justify-between border-t border-slate-200 pt-3">
+                        <label for="show_x0" class="text-sm font-bold text-slate-700">Momenten-Maximum x₀ einblenden</label>
+                        <input type="checkbox" id="show_x0" checked class="w-4 h-4 text-teal-600 border-slate-300 rounded focus:ring-teal-500">
+                    </div>
+                </div>
+
+                <!-- Auflager-Ergebnisse -->
+                <div class="bg-teal-50 p-4 rounded-xl border border-teal-100 shadow-inner">
+                    <h2 class="font-extrabold text-teal-800 text-lg mb-2 flex items-center gap-2">
+                        🔔 Berechnungsergebnisse
+                    </h2>
+                    <div id="output" class="space-y-1 text-teal-950 text-sm">
+                        <!-- Wird dynamisch befüllt -->
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Canvas und Rechenweg rechts -->
+            <div class="lg:col-span-8 space-y-6 lg:sticky lg:top-6">
+                <!-- Statik Canvas mit Sonde -->
+                <div class="relative">
+                    <canvas id="statikCanvas" width="900" height="900"></canvas>
+                    <!-- Schwebendes Sonden-Overlay für Echtzeit-Werte -->
+                    <div id="sondeTooltip" class="absolute hidden bg-slate-900/95 text-white p-3 rounded-lg text-xs shadow-xl border border-slate-700 pointer-events-none space-y-1.5 w-64 z-50">
+                        <div class="font-bold border-b border-slate-700 pb-1 flex justify-between">
+                            <span>Sondendaten</span>
+                            <span id="sonde_x" class="text-teal-400">x = 0.00 m</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Querkraft Q(x):</span>
+                            <span id="sonde_q" class="font-bold text-sky-400">0.00 kN</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Biegemoment M(x):</span>
+                            <span id="sonde_m" class="font-bold text-amber-400">0.00 kNm</span>
+                        </div>
+                        <div id="sonde_didaktik" class="text-[10px] text-slate-400 italic pt-1 border-t border-slate-800">
+                            Mathematischer Zusammenhang...
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Didaktischer Rechenweg -->
+                <div class="bg-slate-50 p-6 rounded-2xl border border-slate-200 shadow-sm">
+                    <h3 class="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
+                        <span class="w-2.5 h-6 bg-indigo-600 rounded-full"></span>
+                        Didaktischer Herleitungsweg (Schritt für Schritt)
+                    </h3>
+                    <div id="rechenweg" class="space-y-6 text-sm text-slate-700 leading-relaxed font-mono">
+                        <!-- Wird dynamisch generiert -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('statikCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        let lastMouseX = -1; // Speichert Mausposition für Sondenzeichnung
+        let dragElements = []; // Liste der interaktiven Anfasser im Canvas
+        let activeDragId = null; // ID des aktuell gezogenen Elements
+
+        // Globale statische Variablen zur Berechnung
+        let A = 0, B = 0;
+
+        function getVal(id) {
+            const val = parseFloat(document.getElementById(id).value);
+            return isNaN(val) ? 0 : val;
+        }
+
+        // Steuert das Aus- und Einblenden der Inputbereiche je nach Toggle-Checkbox
+        function updateInputVisualStates() {
+            const toggles = ['q1', 'q2', 'f1', 'f2'];
+            toggles.forEach(id => {
+                const active = document.getElementById('enable_' + id).checked;
+                const container = document.getElementById(id + '_inputs_container');
+                if (active) {
+                    container.classList.remove('opacity-30', 'pointer-events-none');
+                } else {
+                    container.classList.add('opacity-30', 'pointer-events-none');
+                }
+            });
+        }
+
+        // Listener für Toggles
+        document.querySelectorAll('#enable_q1, #enable_q2, #enable_f1, #enable_f2').forEach(toggle => {
+            toggle.addEventListener('change', function() {
+                updateInputVisualStates();
+                calculate();
+            });
+        });
+
+        // Toggles für Kragarme anzeigen/ausblenden
+        document.getElementById('enable_kl').addEventListener('change', function() {
+            document.getElementById('kl_container').classList.toggle('hidden', !this.checked);
+            calculate();
+        });
+        document.getElementById('enable_kr').addEventListener('change', function() {
+            document.getElementById('kr_container').classList.toggle('hidden', !this.checked);
+            calculate();
+        });
+
+        // Schalter für x0 Position neu zeichnen lassen bei Änderung
+        document.getElementById('show_x0').addEventListener('change', calculate);
+        document.getElementById('diagramScale').addEventListener('input', calculate);
+
+        // Inputs bei numerischer Änderung neu berechnen
+        document.querySelectorAll('input[type="number"]').forEach(input => {
+            input.addEventListener('input', calculate);
+        });
+
+        // Szenarien (Presets) laden
+        document.getElementById('presetSelect').addEventListener('change', function() {
+            const val = this.value;
+            if (val === 'custom') return;
+
+            // Zurücksetzen der Kragarme
+            document.getElementById('enable_kl').checked = false;
+            document.getElementById('enable_kr').checked = false;
+            document.getElementById('kl_container').classList.add('hidden');
+            document.getElementById('kr_container').classList.add('hidden');
+
+            if (val === 'einfeld') {
+                document.getElementById('length').value = 10;
+                document.getElementById('enable_q1').checked = false;
+                document.getElementById('enable_q2').checked = false;
+                document.getElementById('enable_f1').checked = true;
+                document.getElementById('f1').value = 20;
+                document.getElementById('x1').value = 5;
+                document.getElementById('enable_f2').checked = false;
+            } else if (val === 'gleichlast') {
+                document.getElementById('length').value = 10;
+                document.getElementById('enable_q1').checked = true;
+                document.getElementById('q1').value = 4;
+                document.getElementById('q1_start').value = 0;
+                document.getElementById('q1_end').value = 10;
+                document.getElementById('enable_q2').checked = false;
+                document.getElementById('enable_f1').checked = false;
+                document.getElementById('enable_f2').checked = false;
+            } else if (val === 'doppelkragarm') {
+                document.getElementById('length').value = 10;
+                document.getElementById('enable_kl').checked = true;
+                document.getElementById('length_kl').value = 2.5;
+                document.getElementById('kl_container').classList.remove('hidden');
+                document.getElementById('enable_kr').checked = true;
+                document.getElementById('length_kr').value = 2.5;
+                document.getElementById('kr_container').classList.remove('hidden');
+
+                document.getElementById('enable_q1').checked = true;
+                document.getElementById('q1').value = 3;
+                document.getElementById('q1_start').value = -2.5;
+                document.getElementById('q1_end').value = 12.5;
+                document.getElementById('enable_q2').checked = false;
+
+                document.getElementById('enable_f1').checked = true;
+                document.getElementById('f1').value = 15;
+                document.getElementById('x1').value = -2.5;
+                document.getElementById('enable_f2').checked = true;
+                document.getElementById('f2').value = 15;
+                document.getElementById('x2').value = 12.5;
+            } else if (val === 'pruefung') {
+                document.getElementById('length').value = 12;
+                document.getElementById('enable_kl').checked = true;
+                document.getElementById('length_kl').value = 2;
+                document.getElementById('kl_container').classList.remove('hidden');
+
+                document.getElementById('enable_q1').checked = true;
+                document.getElementById('q1').value = 5;
+                document.getElementById('q1_start').value = -2;
+                document.getElementById('q1_end').value = 4;
+
+                document.getElementById('enable_q2').checked = true;
+                document.getElementById('q2').value = 2.5;
+                document.getElementById('q2_start').value = 4;
+                document.getElementById('q2_end').value = 12;
+
+                document.getElementById('enable_f1').checked = true;
+                document.getElementById('f1').value = 12;
+                document.getElementById('x1').value = 2;
+                document.getElementById('enable_f2').checked = true;
+                document.getElementById('f2').value = 8;
+                document.getElementById('x2').value = 9;
+            }
+
+            updateInputVisualStates();
+            calculate();
+        });
+
+        // Bild-Export (Sorgt für hochauflösenden weißen Bildhintergrund)
+        document.getElementById('btnExport').addEventListener('click', function() {
+            const tempMouseX = lastMouseX;
+            lastMouseX = -1;
+            calculate();
+
+            const exportCanvas = document.createElement('canvas');
+            exportCanvas.width = canvas.width;
+            exportCanvas.height = canvas.height;
+            const exportCtx = exportCanvas.getContext('2d');
+
+            exportCtx.fillStyle = '#ffffff';
+            exportCtx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
+            exportCtx.drawImage(canvas, 0, 0);
+
+            const link = document.createElement('a');
+            link.download = 'arbeitsblatt_statik_traeger.png';
+            link.href = exportCanvas.toDataURL('image/png');
+            link.click();
+
+            lastMouseX = tempMouseX;
+            calculate();
+        });
+
+        const tooltip = document.getElementById('sondeTooltip');
+
+        // Funktion zur Positionsermittlung (Maus und Touch kompatibel)
+        function getEventCoords(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches && e.touches.length > 0 ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches && e.touches.length > 0 ? e.touches[0].clientY : e.clientY;
+            return {
+                x: (clientX - rect.left) * (canvas.width / rect.width),
+                y: (clientY - rect.top) * (canvas.height / rect.height),
+                rawX: clientX - rect.left,
+                rawY: clientY - rect.top
+            };
+        }
+
+        function findDragTarget(coords) {
+            for (let el of dragElements) {
+                const dist = Math.hypot(coords.x - el.x, coords.y - el.y);
+                if (dist < 22) { 
+                    return el;
+                }
+            }
+            return null;
+        }
+
+        function startDrag(e) {
+            const coords = getEventCoords(e);
+            const target = findDragTarget(coords);
+            if (target) {
+                activeDragId = target.id;
+                canvas.style.cursor = 'grabbing';
+                tooltip.classList.add('hidden'); 
+                if (e.cancelable) e.preventDefault();
+            }
+        }
+
+        function moveDrag(e) {
+            const coords = getEventCoords(e);
+            const kl_active = document.getElementById('enable_kl').checked;
+            const kr_active = document.getElementById('enable_kr').checked;
+            const L_kl = kl_active ? getVal('length_kl') : 0;
+            const L_kr = kr_active ? getVal('length_kr') : 0;
+            const L = getVal('length');
+            
+            const minX = -L_kl;
+            const maxX = L + L_kr;
+            const totalLength = L_kl + L + L_kr;
+
+            const paddingX = 80;
+            const drawWidth = canvas.width - 2 * paddingX;
+
+            if (activeDragId) {
+                let newX = minX + ((coords.x - paddingX) / drawWidth) * totalLength;
+                newX = Math.round(newX * 10) / 10;
+                newX = Math.max(minX, Math.min(maxX, newX));
+
+                const inputEl = document.getElementById(activeDragId);
+                if (inputEl) {
+                    inputEl.value = newX;
+                    calculate();
+                }
+                if (e.cancelable) e.preventDefault();
+            } else {
+                lastMouseX = coords.x;
+                calculate();
+
+                const rect = canvas.getBoundingClientRect();
+                tooltip.classList.remove('hidden');
+
+                const tooltipWidth = 256; 
+                const tooltipHeight = 120; 
+                
+                let leftPos = coords.rawX + 15;
+                let topPos = coords.rawY + 15;
+
+                if (leftPos + tooltipWidth > rect.width) {
+                    leftPos = coords.rawX - tooltipWidth - 15;
+                }
+
+                if (topPos + tooltipHeight > rect.height) {
+                    topPos = coords.rawY - tooltipHeight - 15;
+                }
+
+                leftPos = Math.max(5, leftPos);
+                topPos = Math.max(5, topPos);
+
+                tooltip.style.left = leftPos + 'px';
+                tooltip.style.top = topPos + 'px';
+            }
+
+            if (!activeDragId && !e.touches) {
+                const target = findDragTarget(coords);
+                canvas.style.cursor = target ? 'grab' : 'crosshair';
+            }
+        }
+
+        function endDrag() {
+            if (activeDragId) {
+                activeDragId = null;
+                canvas.style.cursor = 'crosshair';
+                document.getElementById('presetSelect').value = 'custom'; 
+            }
+        }
+
+        canvas.addEventListener('mousedown', startDrag);
+        canvas.addEventListener('mousemove', moveDrag);
+        window.addEventListener('mouseup', endDrag);
+
+        canvas.addEventListener('touchstart', startDrag, { passive: false });
+        canvas.addEventListener('touchmove', moveDrag, { passive: false });
+        window.addEventListener('touchend', endDrag);
+
+        // Kernberechnung der Statik
+        function calculate() {
+            const L = getVal('length');
+            const kl_active = document.getElementById('enable_kl').checked;
+            const kr_active = document.getElementById('enable_kr').checked;
+            const L_kl = kl_active ? getVal('length_kl') : 0;
+            const L_kr = kr_active ? getVal('length_kr') : 0;
+
+            const f1_active = document.getElementById('enable_f1').checked;
+            const F1 = f1_active ? getVal('f1') : 0;
+            const x1 = f1_active ? getVal('x1') : 0;
+
+            const f2_active = document.getElementById('enable_f2').checked;
+            const F2 = f2_active ? getVal('f2') : 0;
+            const x2 = f2_active ? getVal('x2') : 0;
+
+            const q1_active = document.getElementById('enable_q1').checked;
+            const q1_val = q1_active ? getVal('q1') : 0;
+            const q1_start = q1_active ? getVal('q1_start') : 0;
+            const q1_end = q1_active ? getVal('q1_end') : 0;
+
+            const q2_active = document.getElementById('enable_q2').checked;
+            const q2_val = q2_active ? getVal('q2') : 0;
+            const q2_start = q2_active ? getVal('q2_start') : 0;
+            const q2_end = q2_active ? getVal('q2_end') : 0;
+
+            // Auflagerkräfte berechnen (Summe der Momente um B = 0 -> A, Summe um A = 0 -> B)
+            let sum_M_B = 0; 
+            let sum_M_A = 0; 
+
+            // Einzellast F1
+            if (f1_active) {
+                sum_M_B += F1 * (L - x1);
+                sum_M_A += F1 * x1;
+            }
+            // Einzellast F2
+            if (f2_active) {
+                sum_M_B += F2 * (L - x2);
+                sum_M_A += F2 * x2;
+            }
+
+            // Streckenlast q1
+            let q1_total = 0;
+            if (q1_active && q1_end > q1_start) {
+                const q1_len = q1_end - q1_start;
+                q1_total = q1_val * q1_len;
+                const q1_cog = q1_start + q1_len / 2; // Schwerpunkt
+                sum_M_B += q1_total * (L - q1_cog);
+                sum_M_A += q1_total * q1_cog;
+            }
+
+            // Streckenlast q2
+            let q2_total = 0;
+            if (q2_active && q2_end > q2_start) {
+                const q2_len = q2_end - q2_start;
+                q2_total = q2_val * q2_len;
+                const q2_cog = q2_start + q2_len / 2; // Schwerpunkt
+                sum_M_B += q2_total * (L - q2_cog);
+                sum_M_A += q2_total * q2_cog;
+            }
+
+            A = sum_M_B / L;
+            B = sum_M_A / L;
+
+            // Ausgabe runden
+            const A_rnd = Math.round(A * 100) / 100;
+            const B_rnd = Math.round(B * 100) / 100;
+            const totalLoad = (f1_active ? F1 : 0) + (f2_active ? F2 : 0) + q1_total + q2_total;
+
+            document.getElementById('output').innerHTML = `
+                <div class="flex justify-between py-1 border-b border-teal-200/50">
+                    <span class="font-semibold">Vertikalauflager A:</span>
+                    <span class="font-extrabold text-teal-900">${A_rnd.toFixed(2)} kN</span>
+                </div>
+                <div class="flex justify-between py-1 border-b border-teal-200/50">
+                    <span class="font-semibold">Vertikalauflager B:</span>
+                    <span class="font-extrabold text-teal-900">${B_rnd.toFixed(2)} kN</span>
+                </div>
+                <div class="flex justify-between py-1 pt-2">
+                    <span class="font-semibold text-slate-500">Gesamte Vertikalbelastung:</span>
+                    <span class="font-bold text-slate-700">${totalLoad.toFixed(2)} kN</span>
+                </div>
+            `;
+
+            // Schnittgrößenfunktion für x im Trägersystem
+            function getSchnittgroessen(x) {
+                let Q = 0;
+                let M = 0;
+
+                // Auflager links vom betrachteten Punkt x
+                if (x > 0) {
+                    Q += A;
+                    M += A * x;
+                }
+                if (x > L) {
+                    Q += B;
+                    M += B * (x - L);
+                }
+
+                // Einzellasten links vom Punkt x
+                if (f1_active && x1 < x) {
+                    Q -= F1;
+                    M -= F1 * (x - x1);
+                }
+                if (f2_active && x2 < x) {
+                    Q -= F2;
+                    M -= F2 * (x - x2);
+                }
+
+                // Streckenlast q1 integrieren
+                if (q1_active) {
+                    if (x > q1_start) {
+                        let activeEnd = Math.min(x, q1_end);
+                        let activeLen = activeEnd - q1_start;
+                        Q -= q1_val * activeLen;
+                        M -= q1_val * activeLen * (x - (q1_start + activeEnd) / 2);
+                    }
+                }
+
+                // Streckenlast q2 integrieren
+                if (q2_active) {
+                    if (x > q2_start) {
+                        let activeEnd = Math.min(x, q2_end);
+                        let activeLen = activeEnd - q2_start;
+                        Q -= q2_val * activeLen;
+                        M -= q2_val * activeLen * (x - (q2_start + activeEnd) / 2);
+                    }
+                }
+
+                return { Q, M };
+            }
+
+            // Extremwert der Biegemomente berechnen (Feldmomente)
+            let maxM = 0;
+            let maxX0 = 0;
+            const step_eval = 0.01;
+            const minX = -L_kl;
+            const maxX = L + L_kr;
+
+            for (let x = minX; x <= maxX; x += step_eval) {
+                const s = getSchnittgroessen(x);
+                if (Math.abs(s.M) > Math.abs(maxM)) {
+                    maxM = s.M;
+                    maxX0 = x;
+                }
+            }
+
+            // Didaktischen Rechenweg generieren
+            generateDidacticPathway(L, L_kl, L_kr, kl_active, kr_active, F1, x1, f1_active, F2, x2, f2_active, q1_val, q1_start, q1_end, q1_active, q2_val, q2_start, q2_end, q2_active, A_rnd, B_rnd, maxM, maxX0);
+
+            // Canvas zeichnen
+            drawSystem(L, L_kl, L_kr, kl_active, kr_active, F1, x1, f1_active, F2, x2, f2_active, q1_val, q1_start, q1_end, q1_active, q2_val, q2_start, q2_end, q2_active, getSchnittgroessen, maxM, maxX0);
+        }
+
+        // Didaktischen Rechenweg generieren
+        function generateDidacticPathway(L, L_kl, L_kr, kl_active, kr_active, F1, x1, f1_active, F2, x2, f2_active, q1_val, q1_start, q1_end, q1_active, q2_val, q2_start, q2_end, q2_active, A_rnd, B_rnd, maxM, maxX0) {
+            let pathHtml = "";
+
+            // Schritt 1: Statische Bestimmtheit prüfen
+            pathHtml += `
+                <div class="p-4 bg-white rounded-lg border border-slate-200">
+                    <div class="text-teal-600 font-bold mb-1">Schritt 1: Systemanalyse & Statische Bestimmtheit</div>
+                    <p class="text-xs text-slate-600">
+                        Einfacher Einfeldträger mit optionalen Kragarmen. 
+                        Gleichung: $F = 3$ (Reaktionen: $A_v, B_v, A_h$) bei 3 Gleichgewichtsbedingungen.
+                        Das System ist <strong>statisch bestimmt</strong> und somit direkt lösbar.
+                    </p>
+                </div>
+            `;
+
+            // Schritt 2: Auflagerkräfte herleiten
+            let bMomentEq = `\\sum M^{(A)} = 0 = B \\cdot L`;
+            let aMomentEq = `\\sum M^{(B)} = 0 = A \\cdot L`;
+            
+            if (f1_active) {
+                bMomentEq += ` - F_1 \\cdot x_1`;
+                aMomentEq += ` - F_1 \\cdot (L - x_1)`;
+            }
+            if (f2_active) {
+                bMomentEq += ` - F_2 \\cdot x_2`;
+                aMomentEq += ` - F_2 \\cdot (L - x_2)`;
+            }
+            if (q1_active) {
+                const len = q1_end - q1_start;
+                const force = q1_val * len;
+                const arm = q1_start + len/2;
+                bMomentEq += ` - (q_1 \\cdot l_{q1}) \\cdot x_{cg1}`;
+                aMomentEq += ` - (q_1 \\cdot l_{q1}) \\cdot (L - x_{cg1})`;
+            }
+            if (q2_active) {
+                const len = q2_end - q2_start;
+                const force = q2_val * len;
+                const arm = q2_start + len/2;
+                bMomentEq += ` - (q_2 \\cdot l_{q2}) \\cdot x_{cg2}`;
+                aMomentEq += ` - (q_2 \\cdot l_{q2}) \\cdot (L - x_{cg2})`;
+            }
+
+            pathHtml += `
+                <div class="p-4 bg-white rounded-lg border border-slate-200">
+                    <div class="text-teal-600 font-bold mb-1">Schritt 2: Momentengleichgewicht um die Auflager</div>
+                    <div class="text-xs text-slate-600 space-y-2">
+                        <div>Wir drehen um Auflager A, um B zu berechnen:</div>
+                        <div class="bg-slate-50 p-2 rounded font-mono font-bold text-slate-800 text-center">
+                            B = [ $\\sum (F_i \\cdot x_i) + \\sum (q_j \\cdot s_j \\cdot x_{cg,j})$ ] / L
+                        </div>
+                        <div>Wir drehen um Auflager B, um A zu berechnen:</div>
+                        <div class="bg-slate-50 p-2 rounded font-mono font-bold text-slate-800 text-center">
+                            A = [ $\\sum (F_i \\cdot (L - x_i)) + \\sum (q_j \\cdot s_j \\cdot (L - x_{cg,j}))$ ] / L
+                        </div>
+                        <div class="pt-2 text-indigo-700 font-bold">Ergebnis: A = ${A_rnd.toFixed(2)} kN | B = ${B_rnd.toFixed(2)} kN</div>
+                    </div>
+                </div>
+            `;
+
+            // Schritt 3: Maximales Moment einblenden
+            pathHtml += `
+                <div class="p-4 bg-white rounded-lg border border-slate-200">
+                    <div class="text-teal-600 font-bold mb-1">Schritt 3: Bestimmung des maximalen Biegemoments M_max</div>
+                    <p class="text-xs text-slate-600 mb-2">
+                        Das maximale Biegemoment tritt an der Stelle des Nulldurchgangs der Querkraft auf ($Q(x_0) = 0$).
+                    </p>
+                    <div class="bg-slate-50 p-2.5 rounded font-mono text-xs text-slate-800 space-y-1">
+                        <div>Gefundener Maximalwert: <strong class="text-amber-600">M_max = ${Math.abs(maxM).toFixed(2)} kNm</strong></div>
+                        <div>Position des Extremwerts: <strong>x₀ = ${maxX0.toFixed(2)} m</strong></div>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('rechenweg').innerHTML = pathHtml;
+        }
+
+        // Zeichnen des gesamten Systems im Canvas
+        function drawSystem(L, L_kl, L_kr, kl_active, kr_active, F1, x1, f1_active, F2, x2, f2_active, q1_val, q1_start, q1_end, q1_active, q2_val, q2_start, q2_end, q2_active, getSchnittgroessen, maxM, maxX0) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const totalLength = L_kl + L + L_kr;
+            const paddingX = 80;
+            const drawWidth = canvas.width - 2 * paddingX;
+
+            // X-Koordinate mappen auf Canvas-Pixel
+            function getPixelX(x) {
+                return paddingX + ((x + L_kl) / totalLength) * drawWidth;
+            }
+
+            // System-Trägerlinie auf Y = 160
+            const beamY = 160;
+
+            // Zeichne Träger
+            ctx.strokeStyle = '#334155';
+            ctx.lineWidth = 10;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(getPixelX(-L_kl), beamY);
+            ctx.lineTo(getPixelX(L + L_kr), beamY);
+            ctx.stroke();
+
+            // Auflager A (Festlager bei x=0)
+            const ax = getPixelX(0);
+            ctx.fillStyle = '#64748b';
+            ctx.beginPath();
+            ctx.moveTo(ax, beamY);
+            ctx.lineTo(ax - 15, beamY + 25);
+            ctx.lineTo(ax + 15, beamY + 25);
+            ctx.closePath();
+            ctx.fill();
+            // Gelenkkreis
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(ax, beamY + 5, 4, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#475569';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            // Bodenlinie
+            ctx.strokeStyle = '#475569';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(ax - 22, beamY + 27);
+            ctx.lineTo(ax + 22, beamY + 27);
+            ctx.stroke();
+            // Label
+            ctx.fillStyle = '#1e293b';
+            ctx.font = 'bold 13px sans-serif';
+            ctx.fillText('A', ax - 5, beamY + 45);
+
+            // Auflager B (Loslager bei x=L)
+            const bx = getPixelX(L);
+            ctx.fillStyle = '#64748b';
+            ctx.beginPath();
+            ctx.moveTo(bx, beamY);
+            ctx.lineTo(bx - 15, beamY + 20);
+            ctx.lineTo(bx + 15, beamY + 20);
+            ctx.closePath();
+            ctx.fill();
+            // Rollen
+            ctx.beginPath();
+            ctx.arc(bx - 7, beamY + 24, 3, 0, Math.PI * 2);
+            ctx.arc(bx + 7, beamY + 24, 3, 0, Math.PI * 2);
+            ctx.fill();
+            // Bodenlinie
+            ctx.beginPath();
+            ctx.moveTo(bx - 22, beamY + 28);
+            ctx.lineTo(bx + 22, beamY + 28);
+            ctx.stroke();
+            // Label
+            ctx.fillStyle = '#1e293b';
+            ctx.fillText('B', bx - 5, beamY + 45);
+
+            // Drag-Buttons initialisieren
+            dragElements = [];
+
+            // Einzellasten zeichnen
+            if (f1_active) {
+                const fx1 = getPixelX(x1);
+                const col = document.getElementById('colorF1').value;
+                ctx.strokeStyle = col;
+                ctx.fillStyle = col;
+                ctx.lineWidth = 4;
+                
+                // Pfeil nach unten
+                ctx.beginPath();
+                ctx.moveTo(fx1, beamY - 70);
+                ctx.lineTo(fx1, beamY - 5);
+                ctx.stroke();
+                // Pfeilspitze
+                ctx.beginPath();
+                ctx.moveTo(fx1, beamY - 5);
+                ctx.lineTo(fx1 - 8, beamY - 17);
+                ctx.lineTo(fx1 + 8, beamY - 17);
+                ctx.fill();
+
+                // Kraftbeschriftung
+                ctx.font = 'bold 12px sans-serif';
+                ctx.fillStyle = '#0f172a';
+                ctx.fillText(`F1 = ${F1} kN`, fx1 - 25, beamY - 78);
+
+                // Grip Handle für Drag & Drop
+                ctx.fillStyle = col;
+                ctx.beginPath();
+                ctx.arc(fx1, beamY - 70, 9, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 2.5;
+                ctx.stroke();
+
+                dragElements.push({ id: 'x1', x: fx1, y: beamY - 70 });
+            }
+
+            if (f2_active) {
+                const fx2 = getPixelX(x2);
+                const col = document.getElementById('colorF2').value;
+                ctx.strokeStyle = col;
+                ctx.fillStyle = col;
+                ctx.lineWidth = 4;
+
+                // Pfeil nach unten
+                ctx.beginPath();
+                ctx.moveTo(fx2, beamY - 70);
+                ctx.lineTo(fx2, beamY - 5);
+                ctx.stroke();
+                // Pfeilspitze
+                ctx.beginPath();
+                ctx.moveTo(fx2, beamY - 5);
+                ctx.lineTo(fx2 - 8, beamY - 17);
+                ctx.lineTo(fx2 + 8, beamY - 17);
+                ctx.fill();
+
+                // Kraftbeschriftung
+                ctx.font = 'bold 12px sans-serif';
+                ctx.fillStyle = '#0f172a';
+                ctx.fillText(`F2 = ${F2} kN`, fx2 - 25, beamY - 78);
+
+                // Grip Handle für Drag & Drop
+                ctx.fillStyle = col;
+                ctx.beginPath();
+                ctx.arc(fx2, beamY - 70, 9, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 2.5;
+                ctx.stroke();
+
+                dragElements.push({ id: 'x2', x: fx2, y: beamY - 70 });
+            }
+
+            // Streckenlasten zeichnen
+            if (q1_active && q1_end > q1_start) {
+                const qxStart = getPixelX(q1_start);
+                const qxEnd = getPixelX(q1_end);
+                const col = document.getElementById('colorQ1').value;
+                ctx.fillStyle = col + '22'; // Transparente Füllung
+                ctx.strokeStyle = col;
+                ctx.lineWidth = 2;
+
+                const qHeight = 40;
+                ctx.fillRect(qxStart, beamY - qHeight, qxEnd - qxStart, qHeight);
+                ctx.beginPath();
+                ctx.moveTo(qxStart, beamY - qHeight);
+                ctx.lineTo(qxEnd, beamY - qHeight);
+                ctx.stroke();
+
+                // Kleine vertikale Begrenzungspfeile zeichnen
+                const arrowStep = Math.max(15, (qxEnd - qxStart) / 8);
+                for (let px = qxStart; px <= qxEnd + 1; px += arrowStep) {
+                    ctx.beginPath();
+                    ctx.moveTo(px, beamY - qHeight);
+                    ctx.lineTo(px, beamY - 2);
+                    ctx.stroke();
+                    // Spitzen
+                    ctx.beginPath();
+                    ctx.moveTo(px, beamY - 2);
+                    ctx.lineTo(px - 4, beamY - 8);
+                    ctx.lineTo(px + 4, beamY - 8);
+                    ctx.fill();
+                }
+
+                // Label
+                ctx.fillStyle = '#0f172a';
+                ctx.font = 'bold 12px sans-serif';
+                ctx.fillText(`q1 = ${q1_val} kN/m`, (qxStart + qxEnd)/2 - 40, beamY - qHeight - 8);
+
+                // Drag handles für q1 Start/Ende
+                ctx.fillStyle = col;
+                ctx.beginPath();
+                ctx.arc(qxStart, beamY - qHeight, 7, 0, Math.PI*2);
+                ctx.arc(qxEnd, beamY - qHeight, 7, 0, Math.PI*2);
+                ctx.fill();
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                dragElements.push({ id: 'q1_start', x: qxStart, y: beamY - qHeight });
+                dragElements.push({ id: 'q1_end', x: qxEnd, y: beamY - qHeight });
+            }
+
+            if (q2_active && q2_end > q2_start) {
+                const qxStart = getPixelX(q2_start);
+                const qxEnd = getPixelX(q2_end);
+                const col = document.getElementById('colorQ2').value;
+                ctx.fillStyle = col + '22';
+                ctx.strokeStyle = col;
+                ctx.lineWidth = 2;
+
+                const qHeight = 40;
+                ctx.fillRect(qxStart, beamY - qHeight, qxEnd - qxStart, qHeight);
+                ctx.beginPath();
+                ctx.moveTo(qxStart, beamY - qHeight);
+                ctx.lineTo(qxEnd, beamY - qHeight);
+                ctx.stroke();
+
+                const arrowStep = Math.max(15, (qxEnd - qxStart) / 8);
+                for (let px = qxStart; px <= qxEnd + 1; px += arrowStep) {
+                    ctx.beginPath();
+                    ctx.moveTo(px, beamY - qHeight);
+                    ctx.lineTo(px, beamY - 2);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.moveTo(px, beamY - 2);
+                    ctx.lineTo(px - 4, beamY - 8);
+                    ctx.lineTo(px + 4, beamY - 8);
+                    ctx.fill();
+                }
+
+                ctx.fillStyle = '#0f172a';
+                ctx.font = 'bold 12px sans-serif';
+                ctx.fillText(`q2 = ${q2_val} kN/m`, (qxStart + qxEnd)/2 - 40, beamY - qHeight - 8);
+
+                // Drag handles
+                ctx.fillStyle = col;
+                ctx.beginPath();
+                ctx.arc(qxStart, beamY - qHeight, 7, 0, Math.PI*2);
+                ctx.arc(qxEnd, beamY - qHeight, 7, 0, Math.PI*2);
+                ctx.fill();
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                dragElements.push({ id: 'q2_start', x: qxStart, y: beamY - qHeight });
+                dragElements.push({ id: 'q2_end', x: qxEnd, y: beamY - qHeight });
+            }
+
+            // Normgerechte automatische Bemaßungskette
+            drawDimensionChain(L, L_kl, L_kr, kl_active, kr_active, F1, x1, f1_active, F2, x2, f2_active, q1_start, q1_end, q1_active, q2_start, q2_end, q2_active, getPixelX);
+
+            // Diagramm-Skalierungsfaktor
+            const userScale = parseFloat(document.getElementById('diagramScale').value);
+
+            // ============================================
+            // QUERKRAFT DIAGRAMM (Y-Mitte = 450)
+            // ============================================
+            const qDiagramY = 450;
+            ctx.strokeStyle = '#94a3b8';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(getPixelX(-L_kl), qDiagramY);
+            ctx.lineTo(getPixelX(L + L_kr), qDiagramY);
+            ctx.stroke();
+
+            // Titel links
+            ctx.fillStyle = '#0284c7';
+            ctx.font = 'bold 14px sans-serif';
+            ctx.fillText('Querkraftverlauf Q(x) [kN]', paddingX - 40, qDiagramY - 100);
+
+            // Skalierung Querkraftdiagramm bestimmen (max Kraftwert mappen auf 80px Höhe)
+            let maxQForScale = 10;
+            for (let x = -L_kl; x <= L + L_kr; x += 0.1) {
+                const val = Math.abs(getSchnittgroessen(x).Q);
+                if (val > maxQForScale) maxQForScale = val;
+            }
+            const qScaleFactor = (80 / maxQForScale) * userScale;
+
+            // Q-Kurve zeichnen
+            ctx.strokeStyle = '#0284c7';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            
+            // Startpunkt ganz links
+            let sStart = getSchnittgroessen(-L_kl);
+            ctx.moveTo(getPixelX(-L_kl), qDiagramY - sStart.Q * qScaleFactor);
+
+            for (let x = -L_kl; x <= L + L_kr; x += 0.05) {
+                const s = getSchnittgroessen(x);
+                ctx.lineTo(getPixelX(x), qDiagramY - s.Q * qScaleFactor);
+            }
+            ctx.stroke();
+
+            // Flächenschraffur
+            ctx.fillStyle = '#0284c711';
+            ctx.beginPath();
+            ctx.moveTo(getPixelX(-L_kl), qDiagramY);
+            for (let x = -L_kl; x <= L + L_kr; x += 0.05) {
+                ctx.lineTo(getPixelX(x), qDiagramY - getSchnittgroessen(x).Q * qScaleFactor);
+            }
+            ctx.lineTo(getPixelX(L + L_kr), qDiagramY);
+            ctx.closePath();
+            ctx.fill();
+
+            // Nullstellen-Marker zeichnen (wo die Querkraft die Achse quert)
+            ctx.fillStyle = '#cbd5e1';
+
+            // ============================================
+            // MOMENTEN DIAGRAMM (Y-Mitte = 730)
+            // ============================================
+            const mDiagramY = 730;
+            ctx.strokeStyle = '#94a3b8';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(getPixelX(-L_kl), mDiagramY);
+            ctx.lineTo(getPixelX(L + L_kr), mDiagramY);
+            ctx.stroke();
+
+            // Titel links
+            ctx.fillStyle = '#ea580c';
+            ctx.font = 'bold 14px sans-serif';
+            ctx.fillText('Biegemomentenverlauf M(x) [kNm]', paddingX - 40, mDiagramY - 100);
+
+            // Skalierung Momentenkurve bestimmen
+            let maxMForScale = 10;
+            for (let x = -L_kl; x <= L + L_kr; x += 0.1) {
+                const val = Math.abs(getSchnittgroessen(x).M);
+                if (val > maxMForScale) maxMForScale = val;
+            }
+            const mScaleFactor = (80 / maxMForScale) * userScale;
+
+            // M-Kurve zeichnen (Im Bauwesen zeichnet man positive Momente auf der Zugseite, also nach UNTEN)
+            ctx.strokeStyle = '#ea580c';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            
+            let mStart = getSchnittgroessen(-L_kl);
+            ctx.moveTo(getPixelX(-L_kl), mDiagramY + mStart.M * mScaleFactor);
+
+            for (let x = -L_kl; x <= L + L_kr; x += 0.05) {
+                const s = getSchnittgroessen(x);
+                ctx.lineTo(getPixelX(x), mDiagramY + s.M * mScaleFactor);
+            }
+            ctx.stroke();
+
+            // Flächenschraffur
+            ctx.fillStyle = '#ea580c11';
+            ctx.beginPath();
+            ctx.moveTo(getPixelX(-L_kl), mDiagramY);
+            for (let x = -L_kl; x <= L + L_kr; x += 0.05) {
+                ctx.lineTo(getPixelX(x), mDiagramY + getSchnittgroessen(x).M * mScaleFactor);
+            }
+            ctx.lineTo(getPixelX(L + L_kr), mDiagramY);
+            ctx.closePath();
+            ctx.fill();
+
+            // M_max Marker
+            if (document.getElementById('show_x0').checked) {
+                const mx0 = getPixelX(maxX0);
+                const my0 = mDiagramY + maxM * mScaleFactor;
+
+                ctx.fillStyle = '#ea580c';
+                ctx.beginPath();
+                ctx.arc(mx0, my0, 6, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Text dazu
+                ctx.fillStyle = '#7c2d12';
+                ctx.font = 'bold 11px sans-serif';
+                ctx.fillText(`M_max = ${Math.abs(maxM).toFixed(1)} kNm`, mx0 + 10, my0 + 4);
+                ctx.fillText(`x₀ = ${maxX0.toFixed(1)} m`, mx0 + 10, my0 + 18);
+            }
+
+            // ============================================
+            // INTERAKTIVE SONDE (Sondierungs-Linie zeichnen)
+            // ============================================
+            if (lastMouseX >= paddingX && lastMouseX <= canvas.width - paddingX) {
+                let sX = ((lastMouseX - paddingX) / drawWidth) * totalLength - L_kl;
+                sX = Math.round(sX * 100) / 100; // Präzise auf 2 Nachkommastellen runden
+
+                const sPixelX = getPixelX(sX);
+                const values = getSchnittgroessen(sX);
+
+                // Vertikalen Strich über das gesamte Canvas ziehen
+                ctx.strokeStyle = '#64748b';
+                ctx.lineWidth = 1.5;
+                ctx.setLineDash([5, 5]);
+                ctx.beginPath();
+                ctx.moveTo(sPixelX, beamY - 40);
+                ctx.lineTo(sPixelX, mDiagramY + 110);
+                ctx.stroke();
+                ctx.setLineDash([]); // Reset LineDash
+
+                // Schnittpunkte hervorheben
+                ctx.fillStyle = '#0284c7'; // Q-Schnittpunkt
+                ctx.beginPath();
+                ctx.arc(sPixelX, qDiagramY - values.Q * qScaleFactor, 6, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = '#ea580c'; // M-Schnittpunkt
+                ctx.beginPath();
+                ctx.arc(sPixelX, mDiagramY + values.M * mScaleFactor, 6, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Live-Tooltip HTML befüllen
+                document.getElementById('sonde_x').innerText = `x = ${sX.toFixed(2)} m`;
+                document.getElementById('sonde_q').innerText = `${values.Q.toFixed(2)} kN`;
+                document.getElementById('sonde_m').innerText = `${values.M.toFixed(2)} kNm`;
+
+                // Didaktische Herleitungshilfe live generieren
+                let formulaStr = "Reine Biegespannung vorliegend.";
+                if (Math.abs(values.Q) < 0.1) {
+                    formulaStr = "Schnittpunkt / Maximum: Die Querkraft Q ist hier 0, das Biegemoment erreicht folglich einen Extrempunkt!";
+                } else if (values.Q > 0) {
+                    formulaStr = "Positive Steigung: Da Q(x) > 0, nimmt das Biegemoment in positive x-Richtung linear/parabolisch zu.";
+                } else {
+                    formulaStr = "Negative Steigung: Da Q(x) < 0, nimmt das Biegemoment ab.";
+                }
+                document.getElementById('sonde_didaktik').innerText = formulaStr;
+            }
+        }
+
+        // Zeichnen der normgerechten Maßkette
+        function drawDimensionChain(L, L_kl, L_kr, kl_active, kr_active, F1, x1, f1_active, F2, x2, f2_active, q1_start, q1_end, q1_active, q2_start, q2_end, q2_active, getPixelX) {
+            const chainY = 240;
+
+            // Markante Punkte sammeln
+            let points = [0, L];
+            if (kl_active) points.push(-L_kl);
+            if (kr_active) points.push(L + L_kr);
+            if (f1_active) points.push(x1);
+            if (f2_active) points.push(x2);
+            if (q1_active) {
+                points.push(q1_start);
+                points.push(q1_end);
+            }
+            if (q2_active) {
+                points.push(q2_start);
+                points.push(q2_end);
+            }
+
+            // Duplikate filtern und sortieren
+            points = [...new Set(points)].sort((a, b) => a - b);
+
+            // Bemaßungslinie zeichnen
+            ctx.strokeStyle = '#475569';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(getPixelX(points[0]), chainY);
+            ctx.lineTo(getPixelX(points[points.length - 1]), chainY);
+            ctx.stroke();
+
+            // Teilstücke zeichnen
+            for (let i = 0; i < points.length; i++) {
+                const px = getPixelX(points[i]);
+                
+                // Hilfslinien nach oben zum Träger hin
+                ctx.strokeStyle = '#94a3b8';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(px, beamY + 10);
+                ctx.lineTo(px, chainY + 8);
+                ctx.stroke();
+
+                // Schrägstriche der Bemaßung
+                ctx.strokeStyle = '#334155';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(px - 5, chainY + 5);
+                ctx.lineTo(px + 5, chainY - 5);
+                ctx.stroke();
+
+                // Abstandswert über dem Strich zeichnen
+                if (i < points.length - 1) {
+                    const nextX = getPixelX(points[i+1]);
+                    const diff = points[i+1] - points[i];
+                    if (diff > 0.05) { // Nur zeichnen, wenn der Abstand messbar ist
+                        ctx.fillStyle = '#334155';
+                        ctx.font = '11px sans-serif';
+                        ctx.fillText(`${diff.toFixed(1)}m`, (px + nextX)/2 - 10, chainY - 5);
+                    }
+                }
+            }
+        }
+
+        // Initialisierung des Programms
+        window.onload = function() {
+            updateInputVisualStates();
+            calculate();
+        }
+    </script>
+</body>
+</html>
