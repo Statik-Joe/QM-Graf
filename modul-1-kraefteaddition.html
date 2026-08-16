@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modul 1: Kräfteaddition & Vektoren</title>
+    <link rel="stylesheet" href="tailwind.min.css">
+    <style>
+        canvas { 
+            border: 1px solid #e2e8f0; 
+            background: #f8fafc; 
+            width: 100%; 
+            height: auto; 
+            border-radius: 0.75rem;
+            box-shadow: inset 0 2px 4px 0 rgb(0 0 0 / 0.05);
+        }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen p-4 md:p-6 font-sans text-slate-800">
+    <div class="max-w-7xl mx-auto bg-white p-6 rounded-2xl shadow-xl border border-slate-100">
+        
+        <!-- Header -->
+        <header class="mb-6 border-b pb-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+            <div>
+                <div class="flex items-center gap-3 mb-1">
+                    <a href="index.html" class="text-sky-600 hover:text-sky-800 font-semibold text-sm flex items-center gap-1 bg-sky-50 px-2 py-1 rounded">
+                        <span>&larr;</span> Zurück zum Menü
+                    </a>
+                    <span class="text-xs font-bold bg-sky-100 text-sky-700 px-2 py-0.5 rounded uppercase tracking-wide">Modul 1</span>
+                </div>
+                <h1 class="text-3xl font-extrabold text-slate-800">Kräfteaddition & Vektoren</h1>
+                <p class="text-sm text-slate-500 mt-1">Verändere die Winkel und Beträge der Kräfte, um die Resultierende (grün) zu ermitteln.</p>
+            </div>
+        </header>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            
+            <!-- Controls (Links) -->
+            <div class="lg:col-span-4 space-y-6">
+                
+                <!-- Kraft 1 -->
+                <div class="p-4 bg-indigo-50/70 rounded-xl border border-indigo-100 shadow-sm space-y-4">
+                    <h3 class="text-md font-bold text-indigo-800 flex items-center gap-2">
+                        <span class="w-3.5 h-3.5 bg-indigo-500 rounded-full"></span>
+                        Kraft F₁ (Blau)
+                    </h3>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="flex justify-between text-xs font-bold text-slate-500 mb-1">
+                                <span>Betrag F₁ [N]</span>
+                                <span id="val_f1" class="text-indigo-700 font-bold">80 N</span>
+                            </label>
+                            <input type="range" id="f1_val" min="10" max="150" value="80" class="w-full accent-indigo-600">
+                        </div>
+                        <div>
+                            <label class="flex justify-between text-xs font-bold text-slate-500 mb-1">
+                                <span>Winkel α₁ [°]</span>
+                                <span id="val_a1" class="text-indigo-700 font-bold">30°</span>
+                            </label>
+                            <input type="range" id="f1_ang" min="0" max="360" value="30" class="w-full accent-indigo-600">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Kraft 2 -->
+                <div class="p-4 bg-rose-50/70 rounded-xl border border-rose-100 shadow-sm space-y-4">
+                    <h3 class="text-md font-bold text-rose-800 flex items-center gap-2">
+                        <span class="w-3.5 h-3.5 bg-rose-500 rounded-full"></span>
+                        Kraft F₂ (Rot)
+                    </h3>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="flex justify-between text-xs font-bold text-slate-500 mb-1">
+                                <span>Betrag F₂ [N]</span>
+                                <span id="val_f2" class="text-rose-700 font-bold">100 N</span>
+                            </label>
+                            <input type="range" id="f2_val" min="10" max="150" value="100" class="w-full accent-rose-600">
+                        </div>
+                        <div>
+                            <label class="flex justify-between text-xs font-bold text-slate-500 mb-1">
+                                <span>Winkel α₂ [°]</span>
+                                <span id="val_a2" class="text-rose-700 font-bold">120°</span>
+                            </label>
+                            <input type="range" id="f2_ang" min="0" max="360" value="120" class="w-full accent-rose-600">
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Canvas & Math (Rechts) -->
+            <div class="lg:col-span-8 space-y-6">
+                
+                <div>
+                    <canvas id="vectorCanvas" width="800" height="450"></canvas>
+                </div>
+
+                <!-- Rechenweg -->
+                <div class="bg-slate-50 p-6 rounded-2xl border border-slate-200 font-mono text-sm shadow-sm">
+                    <h3 class="text-lg font-bold text-slate-800 font-sans mb-3 flex items-center gap-2">
+                        <span class="w-2 h-5 bg-emerald-500 rounded-full"></span>
+                        Analytische Addition (Vektorzerlegung)
+                    </h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="bg-white p-3 rounded-lg border border-slate-200">
+                            <p class="font-bold text-indigo-700">F₁ Zerlegung:</p>
+                            <p>F₁ₓ = F₁ · cos(α₁) = <span id="math_f1x">0</span> N</p>
+                            <p>F₁ᵧ = F₁ · sin(α₁) = <span id="math_f1y">0</span> N</p>
+                        </div>
+                        <div class="bg-white p-3 rounded-lg border border-slate-200">
+                            <p class="font-bold text-rose-600">F₂ Zerlegung:</p>
+                            <p>F₂ₓ = F₂ · cos(α₂) = <span id="math_f2x">0</span> N</p>
+                            <p>F₂ᵧ = F₂ · sin(α₂) = <span id="math_f2y">0</span> N</p>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 p-3 bg-emerald-50 border border-emerald-100 rounded-lg text-emerald-950">
+                        <p class="font-bold">Resultierende Gesamtkraft F_R (Grün):</p>
+                        <p class="mt-1">F_Rₓ = F₁ₓ + F₂ₓ = <span id="math_frx">0</span> N</p>
+                        <p>F_Rᵧ = F₁ᵧ + F₂ᵧ = <span id="math_fry">0</span> N</p>
+                        <p class="font-bold mt-2 text-lg">F_R = √(F_Rₓ² + F_Rᵧ²) = <span id="math_fr_val">0</span> N</p>
+                        <p class="text-xs text-emerald-700">Wirkungswinkel φ = <span id="math_fr_ang">0</span>°</p>
+                    </div>
+                </div>
+
+                <!-- Erfolgskontrolle -->
+                <div class="bg-white p-6 rounded-2xl border-2 border-dashed border-amber-300 shadow-sm">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-1">
+                        <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                            <span class="w-2 h-5 bg-amber-500 rounded-full"></span>
+                            Erfolgskontrolle
+                        </h3>
+                        <div class="flex gap-2 flex-wrap">
+                            <button id="btnNewTask" class="text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-lg transition-colors">
+                                🎲 Neue Zufallsaufgabe
+                            </button>
+                            <button id="btnPracticeMode" class="text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white px-3 py-2 rounded-lg transition-colors">
+                                ✏️ Selbst berechnen
+                            </button>
+                        </div>
+                    </div>
+                    <p class="text-sm text-slate-500 mt-2 mb-4">Aktiviere "Selbst berechnen" — die Lösung oben wird ausgeblendet. Rechne die Zerlegung und die Resultierende per Hand und trage deine Werte ein.</p>
+
+                    <div id="practiceForm" class="hidden space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="bg-amber-50/60 p-3 rounded-lg border border-amber-100 space-y-2">
+                                <p class="font-bold text-indigo-700 text-sm font-mono">F₁ Zerlegung:</p>
+                                <div class="flex items-center gap-2">
+                                    <label class="text-xs font-mono w-28">F₁ₓ = F₁·cos(α₁) =</label>
+                                    <input type="number" id="check_f1x" step="0.1" class="w-24 border border-slate-300 rounded px-2 py-1 text-sm">
+                                    <span class="text-xs">N</span>
+                                    <span id="fb_f1x" class="text-lg"></span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <label class="text-xs font-mono w-28">F₁ᵧ = F₁·sin(α₁) =</label>
+                                    <input type="number" id="check_f1y" step="0.1" class="w-24 border border-slate-300 rounded px-2 py-1 text-sm">
+                                    <span class="text-xs">N</span>
+                                    <span id="fb_f1y" class="text-lg"></span>
+                                </div>
+                            </div>
+                            <div class="bg-amber-50/60 p-3 rounded-lg border border-amber-100 space-y-2">
+                                <p class="font-bold text-rose-600 text-sm font-mono">F₂ Zerlegung:</p>
+                                <div class="flex items-center gap-2">
+                                    <label class="text-xs font-mono w-28">F₂ₓ = F₂·cos(α₂) =</label>
+                                    <input type="number" id="check_f2x" step="0.1" class="w-24 border border-slate-300 rounded px-2 py-1 text-sm">
+                                    <span class="text-xs">N</span>
+                                    <span id="fb_f2x" class="text-lg"></span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <label class="text-xs font-mono w-28">F₂ᵧ = F₂·sin(α₂) =</label>
+                                    <input type="number" id="check_f2y" step="0.1" class="w-24 border border-slate-300 rounded px-2 py-1 text-sm">
+                                    <span class="text-xs">N</span>
+                                    <span id="fb_f2y" class="text-lg"></span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-amber-50/60 p-3 rounded-lg border border-amber-100 space-y-2">
+                            <p class="font-bold text-emerald-700 text-sm font-mono">Resultierende F_R:</p>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                <div class="flex items-center gap-2">
+                                    <label class="text-xs font-mono w-28">F_Rₓ =</label>
+                                    <input type="number" id="check_frx" step="0.1" class="w-24 border border-slate-300 rounded px-2 py-1 text-sm">
+                                    <span class="text-xs">N</span>
+                                    <span id="fb_frx" class="text-lg"></span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <label class="text-xs font-mono w-28">F_Rᵧ =</label>
+                                    <input type="number" id="check_fry" step="0.1" class="w-24 border border-slate-300 rounded px-2 py-1 text-sm">
+                                    <span class="text-xs">N</span>
+                                    <span id="fb_fry" class="text-lg"></span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <label class="text-xs font-mono w-28">F_R =</label>
+                                    <input type="number" id="check_fr" step="0.1" class="w-24 border border-slate-300 rounded px-2 py-1 text-sm">
+                                    <span class="text-xs">N</span>
+                                    <span id="fb_fr" class="text-lg"></span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <label class="text-xs font-mono w-28">φ =</label>
+                                    <input type="number" id="check_ang" step="0.1" class="w-24 border border-slate-300 rounded px-2 py-1 text-sm">
+                                    <span class="text-xs">°</span>
+                                    <span id="fb_ang" class="text-lg"></span>
+                                </div>
+                            </div>
+                        </div>
+                        <button id="btnCheck" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded-lg transition-colors">
+                            Prüfen
+                        </button>
+                        <div id="checkResult" class="hidden text-center font-bold text-sm p-3 rounded-lg"></div>
+
+                        <div class="border-t border-slate-200 pt-4 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                            <input type="text" id="studentName" placeholder="Name (optional)" class="flex-1 border border-slate-300 rounded-lg px-3 py-2 text-sm">
+                            <button id="btnExportLog" class="text-sm font-bold bg-slate-700 hover:bg-slate-800 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed" disabled>
+                                📄 Protokoll exportieren (<span id="logCount">0</span>)
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('vectorCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const f1_val = document.getElementById('f1_val');
+        const f1_ang = document.getElementById('f1_ang');
+        const f2_val = document.getElementById('f2_val');
+        const f2_ang = document.getElementById('f2_ang');
+
+        function update() {
+            const F1 = parseFloat(f1_val.value);
+            const a1_rad = parseFloat(f1_ang.value) * Math.PI / 180;
+            const F2 = parseFloat(f2_val.value);
+            const a2_rad = parseFloat(f2_ang.value) * Math.PI / 180;
+
+            document.getElementById('val_f1').innerText = F1 + " N";
+            document.getElementById('val_a1').innerText = f1_ang.value + "°";
+            document.getElementById('val_f2').innerText = F2 + " N";
+            document.getElementById('val_a2').innerText = f2_ang.value + "°";
+
+            // Zerlegung
+            const f1x = F1 * Math.cos(a1_rad);
+            const f1y = F1 * Math.sin(a1_rad);
+            const f2x = F2 * Math.cos(a2_rad);
+            const f2y = F2 * Math.sin(a2_rad);
+
+            const frx = f1x + f2x;
+            const fry = f1y + f2y;
+            const FR = Math.sqrt(frx*frx + fry*fry);
+            let FR_ang = Math.atan2(fry, frx) * 180 / Math.PI;
+            if (FR_ang < 0) FR_ang += 360;
+
+            // Math Box updaten
+            document.getElementById('math_f1x').innerText = f1x.toFixed(1);
+            document.getElementById('math_f1y').innerText = f1y.toFixed(1);
+            document.getElementById('math_f2x').innerText = f2x.toFixed(1);
+            document.getElementById('math_f2y').innerText = f2y.toFixed(1);
+            document.getElementById('math_frx').innerText = frx.toFixed(1);
+            document.getElementById('math_fry').innerText = fry.toFixed(1);
+            document.getElementById('math_fr_val').innerText = FR.toFixed(1);
+            document.getElementById('math_fr_ang').innerText = FR_ang.toFixed(1);
+
+            currentResult = { f1x, f1y, f2x, f2y, frx, fry, fr: FR, ang: FR_ang };
+            if (practiceMode) setSolutionVisible(false);
+
+            draw(F1, a1_rad, F2, a2_rad, frx, fry);
+        }
+
+        function draw(F1, a1, F2, a2, frx, fry) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
+            const scale = 1.3; // Skalierungsfaktor Pixel/Newton
+
+            // Koordinatengitter zeichnen
+            ctx.strokeStyle = '#e2e8f0';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(0, cy); ctx.lineTo(canvas.width, cy);
+            ctx.moveTo(cx, 0); ctx.lineTo(cx, canvas.height);
+            ctx.stroke();
+
+            // Kraft 1 (Blau, Y wird invertiert da Canvas-Y nach unten zeigt)
+            const p1x = cx + F1 * Math.cos(a1) * scale;
+            const p1y = cy - F1 * Math.sin(a1) * scale;
+            drawArrow(cx, cy, p1x, p1y, '#4f46e5', 3, 'F₁');
+
+            // Kraft 2 (Rot)
+            const p2x = cx + F2 * Math.cos(a2) * scale;
+            const p2y = cy - F2 * Math.sin(a2) * scale;
+            drawArrow(cx, cy, p2x, p2y, '#e11d48', 3, 'F₂');
+
+            // Hilfslinien für Parallelogramm
+            ctx.strokeStyle = '#94a3b8';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([5, 5]);
+            // F1 verschoben an F2 Spitze
+            ctx.beginPath();
+            ctx.moveTo(p2x, p2y);
+            ctx.lineTo(p2x + F1 * Math.cos(a1) * scale, p2y - F1 * Math.sin(a1) * scale);
+            // F2 verschoben an F1 Spitze
+            ctx.moveTo(p1x, p1y);
+            ctx.lineTo(p1x + F2 * Math.cos(a2) * scale, p1y - F2 * Math.sin(a2) * scale);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Resultierende Kraft (Grün)
+            const prx = cx + frx * scale;
+            const pry = cy - fry * scale;
+            drawArrow(cx, cy, prx, pry, '#10b981', 4.5, 'F_Resultierend');
+        }
+
+        function drawArrow(fromx, fromy, tox, toy, color, width, label) {
+            const headlen = 12; 
+            const dx = tox - fromx;
+            const dy = toy - fromy;
+            const angle = Math.atan2(dy, dx);
+            
+            ctx.strokeStyle = color;
+            ctx.fillStyle = color;
+            ctx.lineWidth = width;
+
+            // Linie zeichnen
+            ctx.beginPath();
+            ctx.moveTo(fromx, fromy);
+            ctx.lineTo(tox, toy);
+            ctx.stroke();
+
+            // Pfeilspitze zeichnen
+            ctx.beginPath();
+            ctx.moveTo(tox, toy);
+            ctx.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+            ctx.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+            ctx.closePath();
+            ctx.fill();
+
+            // Beschriftung an der Spitze platzen
+            ctx.font = 'bold 12px sans-serif';
+            ctx.fillText(label, tox + 10 * Math.cos(angle), toy + 10 * Math.sin(angle));
+        }
+
+        // Event-Listeners registrieren
+        [f1_val, f1_ang, f2_val, f2_ang].forEach(el => el.addEventListener('input', update));
+
+        // ===== Erfolgskontrolle =====
+        let currentResult = null;
+        let practiceMode = false;
+        let sessionLog = [];
+        const solutionSpanIds = ['math_f1x','math_f1y','math_f2x','math_f2y','math_frx','math_fry','math_fr_val','math_fr_ang'];
+
+        function setSolutionVisible(visible) {
+            solutionSpanIds.forEach(id => {
+                const el = document.getElementById(id);
+                if (!visible) {
+                    el.dataset.real = el.innerText;
+                    el.innerText = '?';
+                } else if (el.dataset.real !== undefined) {
+                    el.innerText = el.dataset.real;
+                }
+            });
+        }
+
+        document.getElementById('btnPracticeMode').addEventListener('click', () => {
+            practiceMode = !practiceMode;
+            const btn = document.getElementById('btnPracticeMode');
+            const form = document.getElementById('practiceForm');
+            if (practiceMode) {
+                btn.innerText = '👁️ Lösung anzeigen';
+                form.classList.remove('hidden');
+                setSolutionVisible(false);
+                document.getElementById('checkResult').classList.add('hidden');
+            } else {
+                btn.innerText = '✏️ Selbst berechnen';
+                form.classList.add('hidden');
+                setSolutionVisible(true);
+            }
+        });
+
+        document.getElementById('btnNewTask').addEventListener('click', () => {
+            f1_val.value = Math.round(20 + Math.random() * 120);
+            f1_ang.value = Math.round(Math.random() * 350);
+            f2_val.value = Math.round(20 + Math.random() * 120);
+            f2_ang.value = Math.round(Math.random() * 350);
+            update();
+            ['check_f1x','check_f1y','check_f2x','check_f2y','check_frx','check_fry','check_fr','check_ang'].forEach(id => document.getElementById(id).value = '');
+            ['fb_f1x','fb_f1y','fb_f2x','fb_f2y','fb_frx','fb_fry','fb_fr','fb_ang'].forEach(id => document.getElementById(id).innerText = '');
+            document.getElementById('checkResult').classList.add('hidden');
+            if (practiceMode) setSolutionVisible(false);
+        });
+
+        document.getElementById('btnCheck').addEventListener('click', () => {
+            if (!currentResult) return;
+            const checks = [
+                ['check_f1x', 'fb_f1x', currentResult.f1x, 'F1x'],
+                ['check_f1y', 'fb_f1y', currentResult.f1y, 'F1y'],
+                ['check_f2x', 'fb_f2x', currentResult.f2x, 'F2x'],
+                ['check_f2y', 'fb_f2y', currentResult.f2y, 'F2y'],
+                ['check_frx', 'fb_frx', currentResult.frx, 'F_Rx'],
+                ['check_fry', 'fb_fry', currentResult.fry, 'F_Ry'],
+                ['check_fr', 'fb_fr', currentResult.fr, 'F_R'],
+                ['check_ang', 'fb_ang', currentResult.ang, 'φ'],
+            ];
+            let correctCount = 0;
+            const detailLines = [];
+            checks.forEach(([inputId, fbId, real, label]) => {
+                const inputVal = parseFloat(document.getElementById(inputId).value);
+                const fb = document.getElementById(fbId);
+                const tolerance = Math.max(1.5, Math.abs(real) * 0.03);
+                const ok = !isNaN(inputVal) && Math.abs(inputVal - real) <= tolerance;
+                fb.innerText = ok ? '✅' : '❌';
+                if (ok) correctCount++;
+                detailLines.push(`    ${label}: eingegeben ${isNaN(inputVal) ? '—' : inputVal} / richtig ${real.toFixed(1)} ${ok ? '✅' : '❌'}`);
+            });
+            setSolutionVisible(true);
+            const resultBox = document.getElementById('checkResult');
+            resultBox.classList.remove('hidden', 'bg-emerald-50', 'text-emerald-800', 'bg-amber-50', 'text-amber-800');
+            if (correctCount === checks.length) {
+                resultBox.classList.add('bg-emerald-50', 'text-emerald-800');
+                resultBox.innerText = `🎉 Alles richtig! (${correctCount}/${checks.length}) Lösung ist jetzt oben sichtbar.`;
+            } else {
+                resultBox.classList.add('bg-amber-50', 'text-amber-800');
+                resultBox.innerText = `${correctCount}/${checks.length} richtig. Vergleiche deine ❌-Werte mit der jetzt sichtbaren Lösung oben.`;
+            }
+
+            // Sitzungsprotokoll für Export
+            sessionLog.push({
+                zeit: new Date().toLocaleTimeString('de-DE'),
+                aufgabe: `F1=${f1_val.value}N/${f1_ang.value}°, F2=${f2_val.value}N/${f2_ang.value}°`,
+                detailLines,
+                correctCount,
+                total: checks.length
+            });
+            document.getElementById('logCount').innerText = sessionLog.length;
+            document.getElementById('btnExportLog').disabled = false;
+        });
+
+        document.getElementById('btnExportLog').addEventListener('click', () => {
+            if (sessionLog.length === 0) return;
+            const name = document.getElementById('studentName').value.trim() || '—';
+            let text = `Erfolgskontrolle – Modul 1: Kräfteaddition & Vektoren\n`;
+            text += `Name: ${name}\n`;
+            text += `Exportiert am: ${new Date().toLocaleString('de-DE')}\n`;
+            text += `${'='.repeat(50)}\n\n`;
+            sessionLog.forEach((entry, i) => {
+                text += `Versuch ${i + 1} (${entry.zeit})\n`;
+                text += `  Aufgabe: ${entry.aufgabe}\n`;
+                text += entry.detailLines.join('\n') + '\n';
+                text += `  Ergebnis: ${entry.correctCount}/${entry.total} richtig\n\n`;
+            });
+            const gesamtRichtig = sessionLog.reduce((s, e) => s + e.correctCount, 0);
+            const gesamtTotal = sessionLog.reduce((s, e) => s + e.total, 0);
+            text += `${'='.repeat(50)}\n`;
+            text += `Gesamt: ${sessionLog.length} Versuch(e), ${gesamtRichtig}/${gesamtTotal} Werte richtig (${Math.round(100 * gesamtRichtig / gesamtTotal)}%)\n`;
+
+            const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            const safeName = name !== '—' ? name.replace(/[^a-zA-Z0-9äöüÄÖÜß_-]/g, '_') : 'protokoll';
+            link.download = `erfolgskontrolle_modul1_${safeName}.txt`;
+            link.href = url;
+            link.click();
+            URL.revokeObjectURL(url);
+        });
+
+        // Init
+        update();
+    </script>
+</body>
+</html>
