@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bautechnik Labor - FoS 12</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="tailwind.min.css">
     <style>
         .module-card {
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -15,22 +15,22 @@
         }
     </style>
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col justify-between font-sans">
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col justify-between font-sans">
 
     <!-- Header -->
-    <header class="bg-slate-800 border-b border-slate-700 shadow-lg">
+    <header class="bg-white border-b border-slate-200 shadow-sm">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <h1 class="text-3xl font-extrabold tracking-tight flex items-center gap-3 text-white">
-                        <svg class="w-8 h-8 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <h1 class="text-3xl font-extrabold tracking-tight flex items-center gap-3 text-slate-800">
+                        <svg class="w-8 h-8 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
                         </svg>
                         Virtuelles Bautechnik-Labor
                     </h1>
-                    <p class="text-slate-300 mt-2 text-base md:text-lg">Interaktive Statik- und Mechanik-Lernmodule für die Fachoberschule (FoS 12)</p>
+                    <p class="text-slate-500 mt-2 text-base md:text-lg">Interaktive Statik- und Mechanik-Lernmodule für die Fachoberschule (FoS 12)</p>
                 </div>
-                <div class="bg-sky-950/80 backdrop-blur px-4 py-2 rounded-lg border border-sky-800 text-sky-300 text-sm font-semibold tracking-wide">
+                <div class="bg-sky-50 px-4 py-2 rounded-lg border border-sky-100 text-sky-700 text-sm font-semibold tracking-wide">
                     HESSEN | BAUTECHNIK
                 </div>
             </div>
@@ -41,86 +41,112 @@
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex-grow w-full">
         
         <div class="mb-10">
-            <h2 class="text-2xl font-bold text-white">Verfügbare Lernmodule</h2>
-            <p class="text-slate-400 mt-1">Wähle ein Thema aus, um die interaktive Echtzeit-Simulation zu starten.</p>
+            <h2 class="text-2xl font-bold text-slate-800">Verfügbare Lernmodule</h2>
+            <p class="text-slate-500 mt-1">Wähle ein Thema aus, um die interaktive Echtzeit-Simulation zu starten.</p>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
 
             <!-- Modul 1: Kräfteaddition & Vektoren -->
-            <div class="module-card bg-slate-800/50 border border-slate-700/80 rounded-2xl overflow-hidden flex flex-col justify-between shadow-xl">
+            <div class="module-card bg-white border border-slate-200 rounded-2xl overflow-hidden flex flex-col justify-between shadow-md">
                 <div>
-                    <div class="h-44 bg-gradient-to-br from-indigo-950/40 to-slate-800 flex items-center justify-center border-b border-slate-700/50 relative overflow-hidden">
-                        <svg class="w-20 h-20 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <div class="h-44 bg-gradient-to-br from-indigo-50 to-slate-50 flex items-center justify-center border-b border-slate-100 relative overflow-hidden">
+                        <svg class="w-20 h-20 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
                         </svg>
                     </div>
                     <div class="p-6">
                         <div class="flex justify-between items-center mb-2">
-                            <span class="text-xs font-bold text-indigo-400 uppercase tracking-wider">Modul 1</span>
-                            <span class="text-xs text-slate-500 font-mono">Vektorrechnung</span>
+                            <span class="text-xs font-bold text-indigo-600 uppercase tracking-wider">Modul 1</span>
+                            <span class="text-xs text-slate-400 font-mono">Vektorrechnung</span>
                         </div>
-                        <h3 class="text-xl font-bold text-white mb-2">Kräfteaddition & Vektoren</h3>
-                        <p class="text-slate-400 text-sm leading-relaxed">
+                        <h3 class="text-xl font-bold text-slate-800 mb-2">Kräfteaddition & Vektoren</h3>
+                        <p class="text-slate-500 text-sm leading-relaxed">
                             Untersuche das Zusammenwirken von Kräften im Raum. Konstruiere Kräfteparallelogramme zeichnerisch und berechne die resultierende Gesamtkraft per Vektorzerlegung.
                         </p>
                     </div>
                 </div>
                 <div class="p-6 pt-0">
-                    <a href="kraefte_vektoren.html" class="block text-center w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 rounded-lg transition-colors shadow-md">
+                    <a href="modul-1-kraefteaddition.html" class="block text-center w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 rounded-lg transition-colors shadow-md">
                         Experiment starten &rarr;
                     </a>
                 </div>
             </div>
 
             <!-- Modul 2: Hebelgesetz & Drehmoment -->
-            <div class="module-card bg-slate-800/50 border border-slate-700/80 rounded-2xl overflow-hidden flex flex-col justify-between shadow-xl">
+            <div class="module-card bg-white border border-slate-200 rounded-2xl overflow-hidden flex flex-col justify-between shadow-md">
                 <div>
-                    <div class="h-44 bg-gradient-to-br from-sky-950/40 to-slate-800 flex items-center justify-center border-b border-slate-700/50 relative overflow-hidden">
-                        <svg class="w-20 h-20 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <div class="h-44 bg-gradient-to-br from-sky-50 to-slate-50 flex items-center justify-center border-b border-slate-100 relative overflow-hidden">
+                        <svg class="w-20 h-20 text-sky-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 14h18M12 14L9 21h6l-3-7zM7 10v4m10-4v4"></path>
                         </svg>
                     </div>
                     <div class="p-6">
                         <div class="flex justify-between items-center mb-2">
-                            <span class="text-xs font-bold text-sky-400 uppercase tracking-wider">Modul 2</span>
-                            <span class="text-xs text-slate-500 font-mono">Hebelgesetz</span>
+                            <span class="text-xs font-bold text-sky-600 uppercase tracking-wider">Modul 2</span>
+                            <span class="text-xs text-slate-400 font-mono">Hebelgesetz</span>
                         </div>
-                        <h3 class="text-xl font-bold text-white mb-2">Hebelgesetz & Drehmoment</h3>
-                        <p class="text-slate-400 text-sm leading-relaxed">
+                        <h3 class="text-xl font-bold text-slate-800 mb-2">Hebelgesetz & Drehmoment</h3>
+                        <p class="text-slate-500 text-sm leading-relaxed">
                             Bringe zweiseitige Wippen und einseitige Hebel (Schubkarren-Prinzip) ins Drehmomentengleichgewicht. Erfahre spielerisch das mathematische Prinzip von Kraft mal Hebelarm.
                         </p>
                     </div>
                 </div>
                 <div class="p-6 pt-0">
-                    <a href="wippe_hebelgesetz.html" class="block text-center w-full bg-sky-600 hover:bg-sky-500 text-white font-bold py-2.5 rounded-lg transition-colors shadow-md">
+                    <a href="modul-2-hebelgesetz.html" class="block text-center w-full bg-sky-600 hover:bg-sky-500 text-white font-bold py-2.5 rounded-lg transition-colors shadow-md">
                         Experiment starten &rarr;
                     </a>
                 </div>
             </div>
 
             <!-- Modul 3: Statik-Tool (Einfeldträger) -->
-            <div class="module-card bg-slate-800/50 border border-slate-700/80 rounded-2xl overflow-hidden flex flex-col justify-between shadow-xl">
+            <div class="module-card bg-white border border-slate-200 rounded-2xl overflow-hidden flex flex-col justify-between shadow-md">
                 <div>
-                    <div class="h-44 bg-gradient-to-br from-teal-950/40 to-slate-800 flex items-center justify-center border-b border-slate-700/50 relative overflow-hidden">
-                        <svg class="w-20 h-20 text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <div class="h-44 bg-gradient-to-br from-teal-50 to-slate-50 flex items-center justify-center border-b border-slate-100 relative overflow-hidden">
+                        <svg class="w-20 h-20 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 6h16M4 12h16m-7 6h7M4 18h7"></path>
                         </svg>
                     </div>
                     <div class="p-6">
                         <div class="flex justify-between items-center mb-2">
-                            <span class="text-xs font-bold text-teal-400 uppercase tracking-wider">Modul 3</span>
-                            <span class="text-xs text-slate-500 font-mono">Baustatik</span>
+                            <span class="text-xs font-bold text-teal-600 uppercase tracking-wider">Modul 3</span>
+                            <span class="text-xs text-slate-400 font-mono">Baustatik</span>
                         </div>
-                        <h3 class="text-xl font-bold text-white mb-2">Schnittgrößen (Einfeldträger)</h3>
-                        <p class="text-slate-400 text-sm leading-relaxed">
+                        <h3 class="text-xl font-bold text-slate-800 mb-2">Schnittgrößen (Einfeldträger)</h3>
+                        <p class="text-slate-500 text-sm leading-relaxed">
                             Berechne detailliert Auflagerkräfte, Querkraftverlauf ($Q$) und Biegemomentenverlauf ($M$) für Träger mit Kragarmen, wandernden Einzellasten und Streckenlasten.
                         </p>
                     </div>
                 </div>
                 <div class="p-6 pt-0">
-                    <a href="statik_einfeldtraeger.html" class="block text-center w-full bg-teal-600 hover:bg-teal-500 text-white font-bold py-2.5 rounded-lg transition-colors shadow-md">
+                    <a href="modul-3-statik-einfeldtraeger.html" class="block text-center w-full bg-teal-600 hover:bg-teal-500 text-white font-bold py-2.5 rounded-lg transition-colors shadow-md">
                         Labor starten &rarr;
+                    </a>
+                </div>
+            </div>
+
+            <!-- Modul 4: Diagramme zuordnen (Quiz) -->
+            <div class="module-card bg-white border border-slate-200 rounded-2xl overflow-hidden flex flex-col justify-between shadow-md">
+                <div>
+                    <div class="h-44 bg-gradient-to-br from-amber-50 to-slate-50 flex items-center justify-center border-b border-slate-100 relative overflow-hidden">
+                        <svg class="w-20 h-20 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <div class="p-6">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-xs font-bold text-amber-600 uppercase tracking-wider">Modul 4</span>
+                            <span class="text-xs text-slate-400 font-mono">Quiz</span>
+                        </div>
+                        <h3 class="text-xl font-bold text-slate-800 mb-2">Diagramme zuordnen</h3>
+                        <p class="text-slate-500 text-sm leading-relaxed">
+                            Ordne dem gezeigten System die passende Momenten- oder Querkraftlinie zu. Mit typischen Fehlerdistraktoren (Vorzeichen, Position) und Punktestand.
+                        </p>
+                    </div>
+                </div>
+                <div class="p-6 pt-0">
+                    <a href="modul-4-diagramme-zuordnen.html" class="block text-center w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-2.5 rounded-lg transition-colors shadow-md">
+                        Quiz starten &rarr;
                     </a>
                 </div>
             </div>
@@ -129,7 +155,7 @@
     </main>
 
     <!-- Footer -->
-    <footer class="bg-slate-950/60 border-t border-slate-800 py-6 text-center text-xs text-slate-500">
+    <footer class="bg-white border-t border-slate-200 py-6 text-center text-xs text-slate-400">
         <p>&copy; 2026 Virtuelles Bautechnik-Labor | Fachoberschule Hessen</p>
     </footer>
 
