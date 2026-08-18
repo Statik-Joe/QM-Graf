@@ -950,80 +950,31 @@
             // Drag-Buttons initialisieren
             dragElements = [];
 
-            // Einzellasten zeichnen
-            if (f1_active) {
-                const fx1 = getPixelX(x1);
-                const col = document.getElementById('colorF1').value;
-                ctx.strokeStyle = col;
-                ctx.fillStyle = col;
-                ctx.lineWidth = 4;
-                
-                // Pfeil nach unten
-                ctx.beginPath();
-                ctx.moveTo(fx1, beamY - 70);
-                ctx.lineTo(fx1, beamY - 5);
-                ctx.stroke();
-                // Pfeilspitze
-                ctx.beginPath();
-                ctx.moveTo(fx1, beamY - 5);
-                ctx.lineTo(fx1 - 8, beamY - 17);
-                ctx.lineTo(fx1 + 8, beamY - 17);
-                ctx.fill();
-
-                // Kraftbeschriftung
-                ctx.font = 'bold 12px sans-serif';
-                ctx.fillStyle = '#0f172a';
-                ctx.fillText(`F1 = ${F1} kN`, fx1 - 25, beamY - 78);
-
-                // Grip Handle für Drag & Drop
-                ctx.fillStyle = col;
-                ctx.beginPath();
-                ctx.arc(fx1, beamY - 70, 9, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.strokeStyle = '#ffffff';
-                ctx.lineWidth = 2.5;
-                ctx.stroke();
-
-                dragElements.push({ id: 'x1', x: fx1, y: beamY - 70 });
+            // Kollisionsvermeidung: verschiebt sich überlappende Lasten automatisch übereinander,
+            // damit Pfeile/Beschriftungen nicht ineinander laufen (übernommen aus früherer Tool-Version)
+            const placedLoads = [];
+            function getSafeY(startX, endX, requiredHeight) {
+                let currentBottomY = beamY - 5;
+                let collision = true;
+                let watchdog = 0;
+                while (collision && watchdog < 20) {
+                    collision = false;
+                    for (const pl of placedLoads) {
+                        if (Math.max(startX, pl.startX) < Math.min(endX, pl.endX)) {
+                            if (currentBottomY > pl.topY - 6) {
+                                currentBottomY = pl.topY - 12;
+                                collision = true;
+                            }
+                        }
+                    }
+                    watchdog++;
+                }
+                const topY = currentBottomY - requiredHeight;
+                placedLoads.push({ startX, endX, topY });
+                return { bottomY: currentBottomY, topY };
             }
 
-            if (f2_active) {
-                const fx2 = getPixelX(x2);
-                const col = document.getElementById('colorF2').value;
-                ctx.strokeStyle = col;
-                ctx.fillStyle = col;
-                ctx.lineWidth = 4;
-
-                // Pfeil nach unten
-                ctx.beginPath();
-                ctx.moveTo(fx2, beamY - 70);
-                ctx.lineTo(fx2, beamY - 5);
-                ctx.stroke();
-                // Pfeilspitze
-                ctx.beginPath();
-                ctx.moveTo(fx2, beamY - 5);
-                ctx.lineTo(fx2 - 8, beamY - 17);
-                ctx.lineTo(fx2 + 8, beamY - 17);
-                ctx.fill();
-
-                // Kraftbeschriftung
-                ctx.font = 'bold 12px sans-serif';
-                ctx.fillStyle = '#0f172a';
-                ctx.fillText(`F2 = ${F2} kN`, fx2 - 25, beamY - 78);
-
-                // Grip Handle für Drag & Drop
-                ctx.fillStyle = col;
-                ctx.beginPath();
-                ctx.arc(fx2, beamY - 70, 9, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.strokeStyle = '#ffffff';
-                ctx.lineWidth = 2.5;
-                ctx.stroke();
-
-                dragElements.push({ id: 'x2', x: fx2, y: beamY - 70 });
-            }
-
-            // Streckenlasten zeichnen
+            // Streckenlasten zuerst zeichnen (unterste Etage, direkt am Träger)
             if (q1_active && q1_end > q1_start) {
                 const qxStart = getPixelX(q1_start);
                 const qxEnd = getPixelX(q1_end);
@@ -1033,44 +984,46 @@
                 ctx.lineWidth = 2;
 
                 const qHeight = 40;
-                ctx.fillRect(qxStart, beamY - qHeight, qxEnd - qxStart, qHeight);
+                const { bottomY: q1BottomY } = getSafeY(qxStart, qxEnd, qHeight + 20);
+                const q1LineY = q1BottomY - qHeight;
+                ctx.fillRect(qxStart, q1LineY, qxEnd - qxStart, qHeight);
                 ctx.beginPath();
-                ctx.moveTo(qxStart, beamY - qHeight);
-                ctx.lineTo(qxEnd, beamY - qHeight);
+                ctx.moveTo(qxStart, q1LineY);
+                ctx.lineTo(qxEnd, q1LineY);
                 ctx.stroke();
 
                 // Kleine vertikale Begrenzungspfeile zeichnen
                 const arrowStep = Math.max(15, (qxEnd - qxStart) / 8);
                 for (let px = qxStart; px <= qxEnd + 1; px += arrowStep) {
                     ctx.beginPath();
-                    ctx.moveTo(px, beamY - qHeight);
-                    ctx.lineTo(px, beamY - 2);
+                    ctx.moveTo(px, q1LineY);
+                    ctx.lineTo(px, q1BottomY);
                     ctx.stroke();
                     // Spitzen
                     ctx.beginPath();
-                    ctx.moveTo(px, beamY - 2);
-                    ctx.lineTo(px - 4, beamY - 8);
-                    ctx.lineTo(px + 4, beamY - 8);
+                    ctx.moveTo(px, q1BottomY);
+                    ctx.lineTo(px - 4, q1BottomY - 6);
+                    ctx.lineTo(px + 4, q1BottomY - 6);
                     ctx.fill();
                 }
 
                 // Label
                 ctx.fillStyle = '#0f172a';
                 ctx.font = 'bold 12px sans-serif';
-                ctx.fillText(`q1 = ${q1_val} kN/m`, (qxStart + qxEnd)/2 - 40, beamY - qHeight - 8);
+                ctx.fillText(`q1 = ${q1_val} kN/m`, (qxStart + qxEnd)/2 - 40, q1LineY - 8);
 
                 // Drag handles für q1 Start/Ende
                 ctx.fillStyle = col;
                 ctx.beginPath();
-                ctx.arc(qxStart, beamY - qHeight, 7, 0, Math.PI*2);
-                ctx.arc(qxEnd, beamY - qHeight, 7, 0, Math.PI*2);
+                ctx.arc(qxStart, q1LineY, 7, 0, Math.PI*2);
+                ctx.arc(qxEnd, q1LineY, 7, 0, Math.PI*2);
                 ctx.fill();
                 ctx.strokeStyle = '#ffffff';
                 ctx.lineWidth = 2;
                 ctx.stroke();
 
-                dragElements.push({ id: 'q1_start', x: qxStart, y: beamY - qHeight });
-                dragElements.push({ id: 'q1_end', x: qxEnd, y: beamY - qHeight });
+                dragElements.push({ id: 'q1_start', x: qxStart, y: q1LineY });
+                dragElements.push({ id: 'q1_end', x: qxEnd, y: q1LineY });
             }
 
             if (q2_active && q2_end > q2_start) {
@@ -1082,41 +1035,122 @@
                 ctx.lineWidth = 2;
 
                 const qHeight = 40;
-                ctx.fillRect(qxStart, beamY - qHeight, qxEnd - qxStart, qHeight);
+                const { bottomY: q2BottomY } = getSafeY(qxStart, qxEnd, qHeight + 20);
+                const q2LineY = q2BottomY - qHeight;
+                ctx.fillRect(qxStart, q2LineY, qxEnd - qxStart, qHeight);
                 ctx.beginPath();
-                ctx.moveTo(qxStart, beamY - qHeight);
-                ctx.lineTo(qxEnd, beamY - qHeight);
+                ctx.moveTo(qxStart, q2LineY);
+                ctx.lineTo(qxEnd, q2LineY);
                 ctx.stroke();
 
                 const arrowStep = Math.max(15, (qxEnd - qxStart) / 8);
                 for (let px = qxStart; px <= qxEnd + 1; px += arrowStep) {
                     ctx.beginPath();
-                    ctx.moveTo(px, beamY - qHeight);
-                    ctx.lineTo(px, beamY - 2);
+                    ctx.moveTo(px, q2LineY);
+                    ctx.lineTo(px, q2BottomY);
                     ctx.stroke();
                     ctx.beginPath();
-                    ctx.moveTo(px, beamY - 2);
-                    ctx.lineTo(px - 4, beamY - 8);
-                    ctx.lineTo(px + 4, beamY - 8);
+                    ctx.moveTo(px, q2BottomY);
+                    ctx.lineTo(px - 4, q2BottomY - 6);
+                    ctx.lineTo(px + 4, q2BottomY - 6);
                     ctx.fill();
                 }
 
                 ctx.fillStyle = '#0f172a';
                 ctx.font = 'bold 12px sans-serif';
-                ctx.fillText(`q2 = ${q2_val} kN/m`, (qxStart + qxEnd)/2 - 40, beamY - qHeight - 8);
+                ctx.fillText(`q2 = ${q2_val} kN/m`, (qxStart + qxEnd)/2 - 40, q2LineY - 8);
 
                 // Drag handles
                 ctx.fillStyle = col;
                 ctx.beginPath();
-                ctx.arc(qxStart, beamY - qHeight, 7, 0, Math.PI*2);
-                ctx.arc(qxEnd, beamY - qHeight, 7, 0, Math.PI*2);
+                ctx.arc(qxStart, q2LineY, 7, 0, Math.PI*2);
+                ctx.arc(qxEnd, q2LineY, 7, 0, Math.PI*2);
                 ctx.fill();
                 ctx.strokeStyle = '#ffffff';
                 ctx.lineWidth = 2;
                 ctx.stroke();
 
-                dragElements.push({ id: 'q2_start', x: qxStart, y: beamY - qHeight });
-                dragElements.push({ id: 'q2_end', x: qxEnd, y: beamY - qHeight });
+                dragElements.push({ id: 'q2_start', x: qxStart, y: q2LineY });
+                dragElements.push({ id: 'q2_end', x: qxEnd, y: q2LineY });
+            }
+
+            // Einzellasten danach zeichnen (stapeln sich automatisch über etwaigen Streckenlasten)
+            if (f1_active) {
+                const fx1 = getPixelX(x1);
+                const col = document.getElementById('colorF1').value;
+                const reqHeight = 65 + 16;
+                const { bottomY: f1BottomY, topY: f1TopY } = getSafeY(fx1 - 25, fx1 + 25, reqHeight);
+                const f1TailY = f1BottomY - 65;
+                ctx.strokeStyle = col;
+                ctx.fillStyle = col;
+                ctx.lineWidth = 4;
+                
+                // Pfeil nach unten
+                ctx.beginPath();
+                ctx.moveTo(fx1, f1TailY);
+                ctx.lineTo(fx1, f1BottomY);
+                ctx.stroke();
+                // Pfeilspitze
+                ctx.beginPath();
+                ctx.moveTo(fx1, f1BottomY);
+                ctx.lineTo(fx1 - 8, f1BottomY - 12);
+                ctx.lineTo(fx1 + 8, f1BottomY - 12);
+                ctx.fill();
+
+                // Kraftbeschriftung
+                ctx.font = 'bold 12px sans-serif';
+                ctx.fillStyle = '#0f172a';
+                ctx.fillText(`F1 = ${F1} kN`, fx1 - 25, f1TailY - 8);
+
+                // Grip Handle für Drag & Drop
+                ctx.fillStyle = col;
+                ctx.beginPath();
+                ctx.arc(fx1, f1TailY, 9, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 2.5;
+                ctx.stroke();
+
+                dragElements.push({ id: 'x1', x: fx1, y: f1TailY });
+            }
+
+            if (f2_active) {
+                const fx2 = getPixelX(x2);
+                const col = document.getElementById('colorF2').value;
+                const reqHeight = 65 + 16;
+                const { bottomY: f2BottomY, topY: f2TopY } = getSafeY(fx2 - 25, fx2 + 25, reqHeight);
+                const f2TailY = f2BottomY - 65;
+                ctx.strokeStyle = col;
+                ctx.fillStyle = col;
+                ctx.lineWidth = 4;
+
+                // Pfeil nach unten
+                ctx.beginPath();
+                ctx.moveTo(fx2, f2TailY);
+                ctx.lineTo(fx2, f2BottomY);
+                ctx.stroke();
+                // Pfeilspitze
+                ctx.beginPath();
+                ctx.moveTo(fx2, f2BottomY);
+                ctx.lineTo(fx2 - 8, f2BottomY - 12);
+                ctx.lineTo(fx2 + 8, f2BottomY - 12);
+                ctx.fill();
+
+                // Kraftbeschriftung
+                ctx.font = 'bold 12px sans-serif';
+                ctx.fillStyle = '#0f172a';
+                ctx.fillText(`F2 = ${F2} kN`, fx2 - 25, f2TailY - 8);
+
+                // Grip Handle für Drag & Drop
+                ctx.fillStyle = col;
+                ctx.beginPath();
+                ctx.arc(fx2, f2TailY, 9, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 2.5;
+                ctx.stroke();
+
+                dragElements.push({ id: 'x2', x: fx2, y: f2TailY });
             }
 
             // Normgerechte automatische Bemaßungskette
