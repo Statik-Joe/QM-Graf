@@ -244,10 +244,10 @@
                     </h3>
                     <div>
                         <label class="flex justify-between text-xs font-bold text-slate-500 mb-1">
-                            <span>Betrag F [N]</span>
-                            <span id="val_sf" class="text-teal-700 font-bold">100 N</span>
+                            <span>Betrag F [kN]</span>
+                            <span id="val_sf" class="text-teal-700 font-bold">20 kN</span>
                         </label>
-                        <input type="range" id="s_f" min="10" max="200" value="100" class="w-full accent-teal-600">
+                        <input type="range" id="s_f" min="0" max="50" step="0.5" value="20" class="w-full accent-teal-600">
                     </div>
                 </div>
 
@@ -268,23 +268,16 @@
                 <div class="p-4 bg-indigo-50/70 rounded-xl border border-indigo-100 shadow-sm space-y-4">
                     <h3 class="text-md font-bold text-indigo-800 flex items-center gap-2">
                         <span class="w-3.5 h-3.5 bg-indigo-500 rounded-full"></span>
-                        Bemaßung
+                        Kräftemaßstab
                     </h3>
                     <div>
-                        <label class="block text-xs font-bold text-slate-500 mb-1">Maßstab</label>
+                        <label class="block text-xs font-bold text-slate-500 mb-1">Maßstab (zum Zeichnen der Pfeile in cm)</label>
                         <select id="s_scale" class="w-full border border-slate-300 rounded-lg px-2 py-1.5 text-sm bg-white">
-                            <option value="10">1 : 10</option>
-                            <option value="20" selected>1 : 20</option>
-                            <option value="50">1 : 50</option>
-                            <option value="100">1 : 100</option>
+                            <option value="4">1 kN = 0,25 cm</option>
+                            <option value="2">1 kN = 0,5 cm</option>
+                            <option value="1" selected>1 kN = 1 cm</option>
+                            <option value="0.5">1 kN = 2 cm</option>
                         </select>
-                    </div>
-                    <div>
-                        <label class="flex justify-between text-xs font-bold text-slate-500 mb-1">
-                            <span>Reale Länge der Fläche [m]</span>
-                            <span id="val_slen" class="text-indigo-700 font-bold">3.0 m</span>
-                        </label>
-                        <input type="range" id="s_len" min="1" max="6" step="0.1" value="3" class="w-full accent-indigo-600">
                     </div>
                 </div>
 
@@ -303,10 +296,11 @@
                         Kräftezerlegung an der Fläche
                     </h3>
                     <div class="bg-white p-3 rounded-lg border border-slate-200 space-y-2">
-                        <p>F_N = F · cos(β) = <span id="s_math_fn">0</span> N <span class="text-xs text-slate-400 font-sans">(senkrecht zur Fläche, "drückend")</span></p>
-                        <p>F_T = F · sin(β) = <span id="s_math_ft">0</span> N <span class="text-xs text-slate-400 font-sans">(parallel zur Fläche, "Hangabtriebskraft")</span></p>
+                        <p>F_y = F · cos(β) = <span id="s_math_fn">0</span> kN <span class="text-xs text-slate-400 font-sans">→ Pfeillänge: <span id="s_cm_fn">0</span> cm</span></p>
+                        <p>F_x = F · sin(β) = <span id="s_math_ft">0</span> kN <span class="text-xs text-slate-400 font-sans">→ Pfeillänge: <span id="s_cm_ft">0</span> cm</span></p>
+                        <p class="pt-2 border-t border-slate-100">F = <span id="s_math_f">0</span> kN <span class="text-xs text-slate-400 font-sans">→ Pfeillänge: <span id="s_cm_f">0</span> cm</span></p>
                     </div>
-                    <p class="text-xs text-slate-400 font-sans mt-3">💡 Die Fläche ist waagerecht, daher entspricht die Flächennormale hier der Senkrechten. β = 90° bedeutet: die Last zieht komplett parallel zur Fläche (F_N = 0).</p>
+                    <p class="text-xs text-slate-400 font-sans mt-3">💡 Die Fläche ist waagerecht: F_y ist die senkrechte, F_x die waagerechte Komponente der Last. β = 90° bedeutet: die Last zieht komplett waagerecht (F_y = 0).</p>
                 </div>
 
             </div>
@@ -563,7 +557,6 @@
         const s_f = document.getElementById('s_f');
         const s_beta = document.getElementById('s_beta');
         const s_scale = document.getElementById('s_scale');
-        const s_len = document.getElementById('s_len');
 
         function drawSlopeArrow(ctx, fromx, fromy, tox, toy, color, width) {
             const headlen = 11;
@@ -588,74 +581,54 @@
             const F = parseFloat(s_f.value);
             const betaDeg = parseFloat(s_beta.value);
             const beta = betaDeg * Math.PI / 180;
-            const scaleDenom = parseFloat(s_scale.value);
-            const realLen = parseFloat(s_len.value);
+            const kNPerCm = parseFloat(s_scale.value); // Kräftemaßstab: so viele kN entsprechen 1 cm
 
-            document.getElementById('val_sf').innerText = F + ' N';
+            document.getElementById('val_sf').innerText = F + ' kN';
             document.getElementById('val_sbeta').innerText = betaDeg + '°';
-            document.getElementById('val_slen').innerText = realLen.toFixed(1) + ' m';
 
-            const F_N = F * Math.cos(beta);
-            const F_T = F * Math.sin(beta);
-            document.getElementById('s_math_fn').innerText = F_N.toFixed(1);
-            document.getElementById('s_math_ft').innerText = F_T.toFixed(1);
+            const F_y = F * Math.cos(beta);
+            const F_x = F * Math.sin(beta);
+            document.getElementById('s_math_fn').innerText = F_y.toFixed(1);
+            document.getElementById('s_math_ft').innerText = F_x.toFixed(1);
+            document.getElementById('s_math_f').innerText = F.toFixed(1);
 
-            drawSlope(F, beta, betaDeg, F_N, F_T, scaleDenom, realLen);
+            const cm_f = kNPerCm > 0 ? F / kNPerCm : 0;
+            const cm_fy = kNPerCm > 0 ? F_y / kNPerCm : 0;
+            const cm_fx = kNPerCm > 0 ? F_x / kNPerCm : 0;
+            document.getElementById('s_cm_f').innerText = cm_f.toFixed(1);
+            document.getElementById('s_cm_fn').innerText = cm_fy.toFixed(1);
+            document.getElementById('s_cm_ft').innerText = cm_fx.toFixed(1);
+
+            drawSlope(F, beta, betaDeg, F_y, F_x, cm_f, cm_fy, cm_fx);
         }
 
-        function drawSlope(F, beta, betaDeg, F_N, F_T, scaleDenom, realLen) {
+        function drawSlope(F, beta, betaDeg, F_y, F_x, cm_f, cm_fy, cm_fx) {
             const ctx = slopeCtx;
             ctx.clearRect(0, 0, slopeCanvas.width, slopeCanvas.height);
             const P = { x: 340, y: 300 };
-            const forceScale = 1.1;
-            const pxPerMeter = 800 / scaleDenom;
-            const drawnLength = realLen * pxPerMeter;
-            const halfLen = drawnLength / 2;
-            const overhang = 30;
+            const forceScale = 4.2; // px pro kN (rein für die Bildschirmdarstellung, unabhängig vom Kräftemaßstab in cm)
+            const groundHalfLen = 160;
 
             ctx.save();
             ctx.translate(P.x, P.y);
 
-            // Fläche (Bauteil-Linie)
+            // Fläche (Bauteil-Linie, immer waagerecht, ohne Bemaßung)
             ctx.strokeStyle = '#1e293b';
             ctx.lineWidth = 4;
             ctx.beginPath();
-            ctx.moveTo(-halfLen - overhang, 0);
-            ctx.lineTo(halfLen + overhang, 0);
+            ctx.moveTo(-groundHalfLen, 0);
+            ctx.lineTo(groundHalfLen, 0);
             ctx.stroke();
 
             // Schraffur (Material-Seite, lokal y>0)
             ctx.strokeStyle = '#94a3b8';
             ctx.lineWidth = 1.5;
-            for (let x = -halfLen - overhang; x <= halfLen + overhang; x += 14) {
+            for (let x = -groundHalfLen; x <= groundHalfLen; x += 14) {
                 ctx.beginPath();
                 ctx.moveTo(x, 2);
                 ctx.lineTo(x - 9, 16);
                 ctx.stroke();
             }
-
-            // Bemaßungslinie (Maßstab)
-            const dimY = 55;
-            ctx.strokeStyle = '#4f46e5';
-            ctx.lineWidth = 1.2;
-            ctx.beginPath();
-            ctx.moveTo(-halfLen, 6); ctx.lineTo(-halfLen, dimY);
-            ctx.moveTo(halfLen, 6); ctx.lineTo(halfLen, dimY);
-            ctx.moveTo(-halfLen, dimY); ctx.lineTo(halfLen, dimY);
-            ctx.stroke();
-            [[-halfLen, 1], [halfLen, -1]].forEach(([x, dir]) => {
-                ctx.beginPath();
-                ctx.moveTo(x, dimY);
-                ctx.lineTo(x + dir * 8, dimY - 4);
-                ctx.lineTo(x + dir * 8, dimY + 4);
-                ctx.closePath();
-                ctx.fillStyle = '#4f46e5';
-                ctx.fill();
-            });
-            ctx.fillStyle = '#4338ca';
-            ctx.font = 'bold 12px sans-serif';
-            ctx.textAlign = 'center';
-            ctx.fillText(`${realLen.toFixed(1)} m  (M 1:${scaleDenom})`, 0, dimY + 18);
 
             // Referenzlinie für β (Flächennormale, lokal -y)
             const refLen = 65;
@@ -676,44 +649,39 @@
             ctx.fillStyle = '#0d9488';
             ctx.font = 'bold 13px sans-serif';
             const betaLabelAng = -Math.PI / 2 + beta / 2;
+            ctx.textAlign = 'center';
             ctx.fillText('β', 46 * Math.cos(betaLabelAng), 46 * Math.sin(betaLabelAng));
 
-            // Lastpfeil F (kommt von außen, trifft im Ursprung auf)
-            const R = F * forceScale;
-            const tailX = R * Math.sin(beta);
-            const tailY = -R * Math.cos(beta);
-            drawSlopeArrow(ctx, tailX, tailY, 0, 0, '#0d9488', 3.5);
-            ctx.fillStyle = '#0d9488';
-            ctx.font = 'bold 13px sans-serif';
-            ctx.fillText(`F = ${F} N`, tailX, tailY - 10);
+            // Kräftedreieck: F_y (Punkt A→B), F_x (Punkt B→C, "ans Dreieck", umgedreht), Last F (Punkt C→A, Hypotenuse)
+            const fyLen = F_y * forceScale;
+            const fxLen = F_x * forceScale;
+            const A = { x: 0, y: 0 };
+            const B = { x: 0, y: -fyLen };
+            const C = { x: fxLen, y: -fyLen };
 
-            // Zerlegung: F_N (senkrecht in die Fläche) und F_T (parallel zur Fläche)
-            const fnLen = F_N * forceScale;
-            const ftLen = F_T * forceScale;
-            drawSlopeArrow(ctx, 0, -fnLen, 0, 0, '#4f46e5', 3);
+            // F_y: von A nach B... gezeichnet als Pfeil B→A (zeigt in die Fläche, wie die Last selbst wirkt)
+            drawSlopeArrow(ctx, B.x, B.y, A.x, A.y, '#4f46e5', 3);
             ctx.fillStyle = '#4f46e5';
             ctx.textAlign = 'right';
-            ctx.fillText(`F_N = ${F_N.toFixed(0)}N`, -8, -fnLen / 2);
+            ctx.fillText(`F_y = ${F_y.toFixed(1)} kN (${cm_fy.toFixed(1)} cm)`, -8, -fyLen / 2);
 
-            drawSlopeArrow(ctx, 0, 0, ftLen, 0, '#e11d48', 3);
+            // F_x: jetzt oben am Dreieck (an der Spitze von F_y), Richtung umgedreht: von C nach B
+            drawSlopeArrow(ctx, C.x, C.y, B.x, B.y, '#e11d48', 3);
             ctx.fillStyle = '#e11d48';
             ctx.textAlign = 'center';
-            ctx.fillText(`F_T = ${F_T.toFixed(0)}N`, ftLen / 2, -10);
+            ctx.fillText(`F_x = ${F_x.toFixed(1)} kN (${cm_fx.toFixed(1)} cm)`, fxLen / 2, -fyLen - 10);
 
-            // Gestrichelte Hilfslinien (Rechteck-Konstruktion wie beim Kräfteparallelogramm)
-            ctx.strokeStyle = '#94a3b8';
-            ctx.lineWidth = 1;
-            ctx.setLineDash([5, 5]);
-            ctx.beginPath();
-            ctx.moveTo(ftLen, 0); ctx.lineTo(ftLen, -fnLen);
-            ctx.moveTo(0, -fnLen); ctx.lineTo(ftLen, -fnLen);
-            ctx.stroke();
-            ctx.setLineDash([]);
+            // Lastpfeil F (Hypotenuse, von C nach A - schließt das Dreieck)
+            drawSlopeArrow(ctx, C.x, C.y, A.x, A.y, '#0d9488', 3.5);
+            ctx.fillStyle = '#0d9488';
+            ctx.font = 'bold 13px sans-serif';
+            ctx.textAlign = 'left';
+            ctx.fillText(`F = ${F.toFixed(1)} kN (${cm_f.toFixed(1)} cm)`, C.x + 8, C.y - 4);
 
             ctx.restore();
         }
 
-        [s_f, s_beta, s_scale, s_len].forEach(el => el.addEventListener('input', updateSlope));
+        [s_f, s_beta, s_scale].forEach(el => el.addEventListener('input', updateSlope));
 
         // Umschalter Modus 1 / Modus 2
         document.getElementById('btnMode1').addEventListener('click', () => {

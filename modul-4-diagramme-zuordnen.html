@@ -353,6 +353,22 @@
         }
 
         // ================= Zeichnen: System =================
+        // Liefert eine deduplizierte, sortierte Liste aller x-Positionen von Auflagern und Lasten
+        function getMarkerXs(task) {
+            const xs = [0, task.L];
+            task.pointLoads.forEach(p => xs.push(p.x));
+            task.udls.forEach(u => { xs.push(u.start); xs.push(u.end); });
+            xs.sort((a, b) => a - b);
+            const deduped = [];
+            const eps = (task.computed.xmax - task.computed.xmin) * 0.005;
+            xs.forEach(x => {
+                if (deduped.length === 0 || Math.abs(x - deduped[deduped.length - 1]) > eps) {
+                    deduped.push(x);
+                }
+            });
+            return deduped;
+        }
+
         function drawSystem(task) {
             const canvas = document.getElementById('systemCanvas');
             const ctx = canvas.getContext('2d');
@@ -363,6 +379,19 @@
             const beamY = 100;
             const scaleX = (canvas.width - 2 * padding) / (xmax - xmin);
             const px = x => padding + (x - xmin) * scaleX;
+
+            // Hilfslinien an allen Auflager-/Lastpositionen (zuerst gezeichnet, liegen im Hintergrund)
+            ctx.strokeStyle = '#cbd5e1';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([4, 4]);
+            getMarkerXs(task).forEach(x => {
+                const cx = px(x);
+                ctx.beginPath();
+                ctx.moveTo(cx, 15);
+                ctx.lineTo(cx, beamY + 34);
+                ctx.stroke();
+            });
+            ctx.setLineDash([]);
 
             // Balken
             ctx.strokeStyle = '#1e293b';
@@ -472,7 +501,7 @@
         }
 
         // ================= Zeichnen: Antwort-Diagramme =================
-        function drawDiagram(canvasId, curve, isM, xmin, xmax, sharedMax, highlightColor) {
+        function drawDiagram(canvasId, curve, isM, xmin, xmax, sharedMax, highlightColor, markerXs) {
             const canvas = document.getElementById(canvasId);
             const ctx = canvas.getContext('2d');
             ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -483,6 +512,21 @@
             const scaleY = sharedMax > 0 ? (canvas.height / 2 - 15) / sharedMax : 1;
             const px = x => padding + (x - xmin) * scaleX;
             const py = y => isM ? axisY + y * scaleY : axisY - y * scaleY;
+
+            // Hilfslinien an Auflager-/Lastpositionen (passend zum System-Bild, im Hintergrund)
+            if (markerXs && markerXs.length) {
+                ctx.strokeStyle = '#e2e8f0';
+                ctx.lineWidth = 1;
+                ctx.setLineDash([3, 3]);
+                markerXs.forEach(x => {
+                    const cx = px(x);
+                    ctx.beginPath();
+                    ctx.moveTo(cx, 4);
+                    ctx.lineTo(cx, canvas.height - 4);
+                    ctx.stroke();
+                });
+                ctx.setLineDash([]);
+            }
 
             // Nulllinie
             ctx.strokeStyle = '#cbd5e1';
@@ -516,8 +560,9 @@
             const trueSeries = task.diagramType === 'M' ? task.computed.Ms : task.computed.Qs;
             const sharedMax = Math.max(...trueSeries.map(p => Math.abs(p.y)), 0.01) * 1.15;
             const isM = task.diagramType === 'M';
+            const markerXs = getMarkerXs(task);
             task.options.forEach((opt, i) => {
-                drawDiagram(`ans${i}`, opt.curve, isM, task.computed.xmin, task.computed.xmax, sharedMax);
+                drawDiagram(`ans${i}`, opt.curve, isM, task.computed.xmin, task.computed.xmax, sharedMax, null, markerXs);
                 document.getElementById(`cap${i}`).innerText = '';
                 document.getElementById(`cap${i}`).parentElement.className = 'option-card bg-white border-2 border-slate-200 rounded-xl p-3 cursor-pointer';
             });
